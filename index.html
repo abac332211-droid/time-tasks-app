@@ -1,0 +1,2444 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#2563eb">
+<meta name="color-scheme" content="light dark">
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="الوقت">
+<link rel="apple-touch-icon" href="icon.svg">
+<title>إدارة الوقت والمهام</title>
+
+<style>
+:root {
+  --bg: #f4f7fb; --text: #172033; --card-bg: #ffffff;
+  --muted: #667085; --empty: #777777; --border: #e5e7eb;
+  --input-border: #d9dee8; --shadow: rgba(0,0,0,.06);
+  --primary: #2563eb; --success: #16a34a; --warning: #f59e0b;
+  --danger: #dc2626; --ghost: #eef2f7; --nav-bg: #ffffff;
+  --progress-bg: #e5e7eb; --modal-overlay: rgba(15,23,42,0.6);
+}
+body.dark-mode {
+  --bg: #0f172a; --text: #e5e7eb; --card-bg: #1e293b;
+  --muted: #94a3b8; --empty: #94a3b8; --border: #334155;
+  --input-border: #475569; --shadow: rgba(0,0,0,.4);
+  --ghost: #334155; --nav-bg: #1e293b; --progress-bg: #334155;
+  --modal-overlay: rgba(0,0,0,0.8);
+}
+* { box-sizing: border-box; font-family: system-ui, -apple-system, BlinkMacSystemFont, Arial, sans-serif; }
+body {
+  margin: 0; background: var(--bg); color: var(--text);
+  padding-bottom: calc(85px + env(safe-area-inset-bottom, 0px));
+  transition: background 0.3s, color 0.3s;
+  -webkit-tap-highlight-color: transparent;
+}
+header {
+  background: linear-gradient(135deg, #2563eb, #7c3aed);
+  color: white; padding: 24px 18px 30px;
+  border-radius: 0 0 28px 28px;
+  box-shadow: 0 4px 15px rgba(37,99,235,0.2);
+}
+header h1 { margin: 0 0 7px; font-size: 24px; font-weight: 800; }
+header p { margin: 0; opacity: 0.92; font-size: 14px; }
+.container { padding: 16px; max-width: 768px; margin: 0 auto; }
+.card {
+  background: var(--card-bg); border-radius: 18px;
+  padding: 18px; margin-bottom: 16px;
+  box-shadow: 0 5px 18px var(--shadow);
+  transition: background 0.3s, border-color 0.3s;
+  border: 1px solid var(--border);
+}
+.card h3 { margin-top: 0; margin-bottom: 12px; font-size: 18px; display: flex; align-items: center; gap: 8px; }
+input, select, textarea {
+  width: 100%; padding: 13px;
+  border: 1px solid var(--input-border); border-radius: 11px;
+  margin: 6px 0; font-size: 15px;
+  background: var(--card-bg); color: var(--text);
+  font-family: inherit; transition: border-color 0.2s, box-shadow 0.2s;
+}
+input:focus, select:focus, textarea:focus {
+  outline: none; border-color: var(--primary);
+  box-shadow: 0 0 0 3px rgba(37,99,235,0.15);
+}
+button {
+  border: 0; border-radius: 11px; padding: 12px 14px;
+  font-size: 14px; cursor: pointer; font-family: inherit;
+  font-weight: 600; display: inline-flex; align-items: center;
+  justify-content: center; gap: 6px;
+  transition: transform 0.1s, opacity 0.2s, background-color 0.2s;
+}
+button:active { transform: scale(0.98); }
+.btn-primary { width: 100%; background: var(--primary); color: white; margin-top: 8px; }
+.btn-success { background: var(--success); color: white; }
+.btn-warning { background: var(--warning); color: white; }
+.btn-danger { background: var(--danger); color: white; }
+.btn-ghost { background: var(--ghost); color: var(--text); }
+.page { display: none; }
+.page.active { display: block; animation: fadeIn 0.25s ease-out; }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+.task {
+  border: 1px solid var(--border); border-right: 5px solid var(--primary);
+  border-radius: 14px; padding: 14px; margin-top: 12px;
+  background: var(--card-bg);
+  transition: background 0.3s, border-color 0.3s, transform 0.2s;
+}
+.task.done { border-right-color: var(--success); opacity: 0.72; }
+.task-title { font-size: 16px; font-weight: 700; margin-bottom: 6px; word-break: break-word; }
+.task-info { color: var(--muted); font-size: 13px; line-height: 1.8; word-break: break-word; }
+.badge {
+  display: inline-block; padding: 4px 10px; border-radius: 8px;
+  font-size: 12px; margin-top: 8px; font-weight: 600;
+  background: #eef2ff; color: #3730a3;
+}
+.badge.late { background: #fee2e2; color: #991b1b; }
+.badge.soon { background: #fef3c7; color: #92400e; }
+.badge.done { background: #dcfce7; color: #166534; }
+.gap { font-weight: bold; }
+.gap.positive { color: var(--danger); }
+.gap.negative { color: var(--success); }
+.gap.neutral { color: var(--muted); }
+.actions { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+.actions button { flex: 1; min-width: 60px; padding: 9px 8px; font-size: 13px; }
+.stats-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.stat-box { background: rgba(148,163,184,0.08); border-radius: 14px; padding: 14px; text-align: center; }
+.stat-number { font-size: 24px; font-weight: 800; margin-top: 4px; }
+.progress { height: 12px; background: var(--progress-bg); border-radius: 20px; overflow: hidden; margin-top: 10px; }
+.progress-bar { height: 100%; width: 0%; background: var(--primary); transition: width 0.5s, background 0.5s; }
+.progress-bar.complete { background: linear-gradient(90deg, #fbbf24, #f59e0b, #fbbf24); animation: shimmer 2s ease-in-out infinite; }
+@keyframes shimmer { 0%, 100% { filter: brightness(1); } 50% { filter: brightness(1.35); } }
+.celebrate { animation: pop 0.6s ease-out; }
+@keyframes pop { 0% { transform: scale(1); } 50% { transform: scale(1.04); } 100% { transform: scale(1); } }
+.filters { display: flex; gap: 8px; overflow-x: auto; margin-top: 8px; padding-bottom: 4px; }
+.filters button { white-space: nowrap; background: var(--ghost); color: var(--text); padding: 8px 14px; font-size: 13px; }
+.filters button.active { background: var(--primary); color: white; }
+.empty { text-align: center; color: var(--empty); padding: 25px 5px; font-size: 14px; }
+.small { color: var(--muted); font-size: 13px; line-height: 1.5; }
+nav {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  background: var(--nav-bg); display: flex; justify-content: space-around;
+  padding: 8px 8px calc(8px + env(safe-area-inset-bottom, 0px));
+  box-shadow: 0 -2px 12px var(--shadow); z-index: 10;
+  border-top: 1px solid var(--border); transition: background 0.3s;
+}
+nav button { padding: 8px 10px; font-size: 12px; background: transparent; color: var(--muted); flex: 1; border-radius: 12px; flex-direction: column; gap: 2px; }
+nav button.active { color: var(--primary); font-weight: bold; background: rgba(37,99,235,0.1); }
+.hidden { display: none !important; }
+body.dark-mode .badge { background: #334155; color: #c7d2fe; }
+body.dark-mode .badge.late { background: #450a0a; color: #fca5a5; }
+body.dark-mode .badge.soon { background: #451a03; color: #fcd34d; }
+body.dark-mode .badge.done { background: #052e16; color: #86efac; }
+.daily-log-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+.daily-log-header h3 { margin: 0; }
+.daily-log-status { font-size: 12px; color: var(--success); font-weight: bold; }
+.daily-log-status.empty { color: var(--muted); font-weight: normal; }
+.daily-log-row { margin-top: 14px; }
+.daily-log-label { font-size: 14px; font-weight: 600; margin-bottom: 8px; }
+.rating-buttons { display: flex; gap: 6px; }
+.rating-buttons button { flex: 1; padding: 10px 0; background: var(--ghost); color: var(--text); border-radius: 10px; font-size: 15px; font-weight: bold; }
+.rating-buttons button.active { background: var(--primary); color: white; transform: scale(1.04); }
+.energy-buttons { display: flex; gap: 6px; }
+.energy-buttons button { flex: 1; padding: 10px 4px; background: var(--ghost); color: var(--text); border-radius: 10px; font-size: 13px; }
+.energy-buttons button.active { background: var(--primary); color: white; }
+.mental-details { margin-top: 14px; border-top: 1px dashed var(--border); padding-top: 12px; }
+.mental-details summary { cursor: pointer; font-size: 14px; font-weight: 600; padding: 4px 0; color: var(--text); }
+.mental-details summary::-webkit-details-marker { color: var(--primary); }
+.weekly-summary { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+.weekly-stat { background: rgba(148,163,184,0.08); border-radius: 12px; padding: 12px; text-align: center; }
+.weekly-stat-label { font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+.weekly-stat-value { font-size: 22px; font-weight: bold; }
+.weekly-metrics { margin-top: 8px; }
+.weekly-metric { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); }
+.weekly-metric:last-child { border-bottom: none; }
+.weekly-metric-label { font-size: 14px; }
+.weekly-metric-value { font-size: 15px; font-weight: bold; }
+.weekly-metric-value.high { color: var(--success); }
+.weekly-metric-value.mid  { color: var(--warning); }
+.weekly-metric-value.low  { color: var(--danger); }
+.weekly-metric-value.positive { color: var(--danger); }
+.weekly-metric-value.negative { color: var(--success); }
+.weekly-metric-value.neutral  { color: var(--muted); }
+.weekly-gap-section { margin-top: 14px; padding-top: 12px; border-top: 1px dashed var(--border); }
+.weekly-gap-section h4 { margin: 0 0 8px; font-size: 15px; }
+.weekly-recommendation { margin-top: 14px; padding: 12px 14px; border-radius: 12px; font-size: 14px; line-height: 1.8; }
+.weekly-recommendation.success { background: #dcfce7; color: #166534; }
+.weekly-recommendation.warn    { background: #fee2e2; color: #991b1b; }
+.weekly-recommendation.info    { background: #dbeafe; color: #1e40af; }
+body.dark-mode .weekly-recommendation.success { background: #052e16; color: #86efac; }
+body.dark-mode .weekly-recommendation.warn    { background: #450a0a; color: #fca5a5; }
+body.dark-mode .weekly-recommendation.info    { background: #1e3a8a; color: #bfdbfe; }
+.type-gap-card { margin-top: 12px; padding: 14px; border-radius: 14px; background: rgba(148,163,184,0.08); }
+.type-gap-card:first-child { margin-top: 0; }
+.type-gap-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; padding-bottom: 8px; border-bottom: 1px dashed var(--border); flex-wrap: wrap; gap: 6px; }
+.type-gap-header strong { font-size: 16px; }
+.type-sample-warning { margin-top: 10px; padding: 8px 12px; border-radius: 8px; font-size: 12px; text-align: center; font-weight: bold; }
+.type-sample-warning.warn { background: #fef3c7; color: #92400e; }
+.type-sample-warning.info { background: #dbeafe; color: #1e40af; }
+.type-sample-warning.success { background: #dcfce7; color: #166534; }
+body.dark-mode .type-sample-warning.warn { background: #451a03; color: #fcd34d; }
+body.dark-mode .type-sample-warning.info { background: #1e3a8a; color: #bfdbfe; }
+body.dark-mode .type-sample-warning.success { background: #052e16; color: #86efac; }
+.test-badge { display: inline-block; background: #fbbf24; color: #78350f; padding: 2px 8px; border-radius: 6px; font-size: 11px; font-weight: bold; margin-left: 6px; }
+.modal-overlay {
+  position: fixed; inset: 0; background: var(--modal-overlay);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 1000; padding: 16px; backdrop-filter: blur(4px);
+  animation: fadeIn 0.2s ease-out;
+}
+.modal-card {
+  background: var(--card-bg); border-radius: 20px;
+  padding: 22px; width: 100%; max-width: 440px;
+  box-shadow: 0 20px 25px -5px rgba(0,0,0,0.2), 0 8px 10px -6px rgba(0,0,0,0.1);
+  border: 1px solid var(--border);
+}
+.modal-header { font-size: 18px; font-weight: 700; margin-bottom: 12px; color: var(--text); }
+.modal-body { font-size: 14px; color: var(--text); line-height: 1.6; margin-bottom: 20px; }
+.modal-footer { display: flex; gap: 8px; justify-content: flex-end; }
+.modal-footer button { flex: 1; min-width: 80px; }
+#toastContainer {
+  position: fixed; top: calc(16px + env(safe-area-inset-top, 0px));
+  left: 50%; transform: translateX(-50%);
+  z-index: 1100; display: flex; flex-direction: column; gap: 8px;
+  width: 90%; max-width: 400px; pointer-events: none;
+}
+.toast {
+  background: #1e293b; color: #ffffff; padding: 12px 16px; border-radius: 12px;
+  font-size: 14px; font-weight: 600; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3);
+  animation: slideDown 0.3s ease-out; pointer-events: auto;
+}
+body.dark-mode .toast { background: #334155; color: #f8fafc; }
+@keyframes slideDown { from { transform: translateY(-20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+.toast.fade-out { opacity: 0; transform: translateY(-10px); transition: all 0.3s ease-in; }
+</style>
+</head>
+
+<body>
+
+<header>
+  <h1>⏱️ إدارة الوقت والمهام</h1>
+  <p>خطط، أنجز، وحلّل وقتك بدقة وتوازن</p>
+</header>
+
+<div class="container">
+
+<section id="page-home" class="page active">
+  <div class="card">
+    <h3>📊 إنجاز اليوم</h3>
+    <div class="stats-grid">
+      <div class="stat-box"><div>📋</div><div class="stat-number" id="homeTotal">0</div><small>مهام اليوم</small></div>
+      <div class="stat-box"><div>✅</div><div class="stat-number" id="homeDone">0</div><small>منجزة</small></div>
+      <div class="stat-box"><div>⏳</div><div class="stat-number" id="homePending">0</div><small>قيد الانتظار</small></div>
+      <div class="stat-box"><div>⚠️</div><div class="stat-number" id="homeLate">0</div><small>متأخرة</small></div>
+    </div>
+    <div style="text-align:center;margin-top:15px;font-size:28px;font-weight:800;" id="homePercent">0%</div>
+    <div class="progress"><div class="progress-bar" id="homeBar"></div></div>
+  </div>
+
+  <div class="card">
+    <h3>🌅 إضافة سريعة</h3>
+    <p class="small">أضف مهمة لليوم بسرعة</p>
+    <input id="quickName" type="text" placeholder="اسم المهمة" aria-label="اسم المهمة">
+    <input id="quickExpected" type="number" inputmode="numeric" min="1" placeholder="الزمن المتوقع (دقيقة)" aria-label="الزمن المتوقع">
+    <button class="btn-primary" onclick="quickAdd()">➕ إضافة</button>
+  </div>
+
+  <div class="card">
+    <div class="daily-log-header">
+      <h3>📝 سجل اليوم</h3>
+      <span id="dailyLogStatus" class="daily-log-status empty"></span>
+    </div>
+    <p class="small" style="margin-top:-4px;margin-bottom:8px;">قيّم يومك بصدق — يُحفظ تلقائيًا.</p>
+
+    <div class="daily-log-row">
+      <div class="daily-log-label">🎛️ السيطرة المدركة</div>
+      <div class="rating-buttons" id="rating-control">
+        <button data-v="1" onclick="setDailyRating('control', 1)">1</button>
+        <button data-v="2" onclick="setDailyRating('control', 2)">2</button>
+        <button data-v="3" onclick="setDailyRating('control', 3)">3</button>
+        <button data-v="4" onclick="setDailyRating('control', 4)">4</button>
+        <button data-v="5" onclick="setDailyRating('control', 5)">5</button>
+      </div>
+    </div>
+
+    <div class="daily-log-row">
+      <div class="daily-log-label">🎯 التنفيذ الفعلي</div>
+      <div class="rating-buttons" id="rating-execution">
+        <button data-v="1" onclick="setDailyRating('execution', 1)">1</button>
+        <button data-v="2" onclick="setDailyRating('execution', 2)">2</button>
+        <button data-v="3" onclick="setDailyRating('execution', 3)">3</button>
+        <button data-v="4" onclick="setDailyRating('execution', 4)">4</button>
+        <button data-v="5" onclick="setDailyRating('execution', 5)">5</button>
+      </div>
+    </div>
+
+    <div class="daily-log-row">
+      <div class="daily-log-label">🌿 الرفاه والهدوء</div>
+      <div class="rating-buttons" id="rating-wellbeing">
+        <button data-v="1" onclick="setDailyRating('wellbeing', 1)">1</button>
+        <button data-v="2" onclick="setDailyRating('wellbeing', 2)">2</button>
+        <button data-v="3" onclick="setDailyRating('wellbeing', 3)">3</button>
+        <button data-v="4" onclick="setDailyRating('wellbeing', 4)">4</button>
+        <button data-v="5" onclick="setDailyRating('wellbeing', 5)">5</button>
+      </div>
+    </div>
+
+    <div class="daily-log-row">
+      <div class="daily-log-label">⚡ مستوى الطاقة</div>
+      <div class="energy-buttons" id="energy-buttons">
+        <button data-v="منخفض" onclick="setDailyEnergy('منخفض')">منخفض</button>
+        <button data-v="متوسط" onclick="setDailyEnergy('متوسط')">متوسط</button>
+        <button data-v="مرتفع" onclick="setDailyEnergy('مرتفع')">مرتفع</button>
+      </div>
+    </div>
+
+    <div class="daily-log-row">
+      <div class="daily-log-label">🚧 عدد المقاطعات</div>
+      <input id="dailyLogDistractions" type="number" inputmode="numeric" min="0" placeholder="0" onchange="setDailyDistractions(this.value)">
+    </div>
+
+    <details class="mental-details">
+      <summary>🧠 تفريغ ذهني (اختياري)</summary>
+      <input id="dailyLogMentalTask" type="text" placeholder="مهمة مفتوحة ذهنيًا" onchange="setDailyMental('mentalTask', this.value)">
+      <input id="dailyLogMentalNext" type="text" placeholder="الخطوة التالية" onchange="setDailyMental('mentalNext', this.value)">
+    </details>
+  </div>
+</section>
+
+<section id="page-tasks" class="page">
+  <div class="card">
+    <h3 id="taskFormTitle">➕ إضافة مهمة</h3>
+    <input id="taskName" type="text" placeholder="اسم المهمة" aria-label="اسم المهمة">
+    <select id="taskType" aria-label="نوع المهمة">
+      <option value="معرفية">معرفية</option>
+      <option value="إدارية">إدارية</option>
+      <option value="إبداعية">إبداعية</option>
+      <option value="اجتماعية">اجتماعية</option>
+    </select>
+    <input id="taskExpected" type="number" inputmode="numeric" min="1" placeholder="الزمن المتوقع (دقيقة)" aria-label="الزمن المتوقع">
+    <input id="taskActual" type="number" inputmode="numeric" min="0" placeholder="المدة الفعلية المسجلة (دقيقة)" class="hidden" aria-label="المدة الفعلية">
+    <input id="taskDate" type="date" aria-label="التاريخ">
+    <input id="taskTime" type="time" aria-label="الوقت">
+    <button class="btn-primary" id="taskSaveBtn" onclick="saveTask()">إضافة المهمة</button>
+    <button class="btn-ghost hidden" id="taskCancelBtn" onclick="cancelEdit()" style="width:100%;margin-top:6px;">إلغاء التعديل</button>
+    <p class="small" style="margin-top:8px;">💡 لإنجاز مهمة، اضغط زر <b>✓ إنجاز</b> في بطاقة المهمة.</p>
+  </div>
+
+  <div class="card">
+    <h3>🔍 بحث وتصفية</h3>
+    <input id="searchInput" type="text" placeholder="ابحث..." oninput="renderTasks()" aria-label="بحث">
+    <div class="filters">
+      <button class="active" onclick="setFilter('all', this)">الكل</button>
+      <button onclick="setFilter('pending', this)">قيد الانتظار</button>
+      <button onclick="setFilter('done', this)">منجزة</button>
+      <button onclick="setFilter('late', this)">متأخرة</button>
+    </div>
+    <select id="typeFilter" onchange="renderTasks()" style="margin-top:8px;" aria-label="تصفية حسب النوع">
+      <option value="">كل الأنواع</option>
+      <option value="معرفية">معرفية</option>
+      <option value="إدارية">إدارية</option>
+      <option value="إبداعية">إبداعية</option>
+      <option value="اجتماعية">اجتماعية</option>
+    </select>
+  </div>
+
+  <div class="card">
+    <h3>📝 قائمة المهام</h3>
+    <div id="taskList"></div>
+  </div>
+</section>
+
+<section id="page-stats" class="page">
+  <div class="card">
+    <h3>📊 الإحصائيات العامة</h3>
+    <div class="stats-grid">
+      <div class="stat-box"><div>📋</div><div class="stat-number" id="statsTotal">0</div><small>إجمالي</small></div>
+      <div class="stat-box"><div>✅</div><div class="stat-number" id="statsDone">0</div><small>منجزة</small></div>
+      <div class="stat-box"><div>⏳</div><div class="stat-number" id="statsPending">0</div><small>قيد الانتظار</small></div>
+      <div class="stat-box"><div>⚠️</div><div class="stat-number" id="statsLate">0</div><small>متأخرة</small></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>📅 التقرير الأسبوعي</h3>
+    <p class="small" style="margin-top:-4px;">آخر 7 أيام تشغيلية (حسب تاريخ التخطيط)</p>
+    <div id="weeklyReport"></div>
+  </div>
+
+  <div class="card">
+    <h3>🔬 تحليل الفجوة حسب النوع</h3>
+    <p class="small" style="margin-top:-4px;">لقياس دقة تقديرك الزمني لكل نوع</p>
+    <div id="typeGapAnalysis"></div>
+  </div>
+
+  <div class="card">
+    <h3>📈 حسب النوع</h3>
+    <div id="typeStats"></div>
+  </div>
+</section>
+
+<section id="page-settings" class="page">
+  <div class="card">
+    <h3>⚙️ الإعدادات</h3>
+    <button class="btn-ghost" style="width:100%;" onclick="toggleDarkMode()">🌙 تبديل الوضع الليلي</button>
+  </div>
+
+  <div class="card">
+    <h3>📦 النسخ الاحتياطي الكامل</h3>
+    <p class="small">احفظ نسخة كاملة من كل بياناتك في ملف واحد. يمكنك استعادته لاحقًا أو على هاتف آخر.</p>
+    <button class="btn-primary" onclick="exportBackup()">📦 تصدير نسخة احتياطية</button>
+  </div>
+
+  <div class="card">
+    <h3>📥 استعادة من ملف</h3>
+    <p class="small">اختر ملف نسخة احتياطية. <b>سيتم استبدال كل بياناتك الحالية.</b> يمكنك التراجع.</p>
+    <input type="file" id="importFileInput" accept=".json,application/json" style="display:none;" onchange="handleImportFile(event)">
+    <button class="btn-ghost" style="width:100%;" onclick="document.getElementById('importFileInput').click()">📥 اختيار ملف للاستعادة</button>
+  </div>
+
+  <div class="card">
+    <h3>📤 تصدير المهام (CSV)</h3>
+    <p class="small">احفظ المهام فقط بصيغة CSV لفتحها في Excel.</p>
+    <button class="btn-primary" onclick="exportCSV()">📤 تصدير CSV</button>
+  </div>
+
+  <div class="card">
+    <h3>📤 مشاركة التقرير الأسبوعي</h3>
+    <p class="small">شارك ملخص أدائك الأسبوعي عبر أي تطبيق (واتساب، تيليجرام، بريد...).</p>
+    <button class="btn-primary" onclick="shareWeeklyReport()">📤 مشاركة التقرير</button>
+  </div>
+
+  <div class="card">
+    <h3>🔄 التراجع عن آخر استعادة</h3>
+    <p class="small">إذا استعدت نسخة بالخطأ، استرجع الحالة السابقة (خطوة واحدة فقط).</p>
+    <button class="btn-warning" style="width:100%;" onclick="undoLastImport()">↩️ استرجاع الحالة السابقة</button>
+  </div>
+
+  <div class="card">
+    <h3>🗑️ إعادة تعيين</h3>
+    <p class="small">سيتم حذف كل المهام وسجلات الأيام. يبقى تفضيل الوضع الليلي.</p>
+    <button class="btn-danger" style="width:100%;" onclick="resetAll()">حذف كل البيانات</button>
+  </div>
+
+  <div class="card">
+    <h3>🧪 اختبار الترقية</h3>
+    <p class="small">تشغيل 36 اختبارًا لبنية البيانات (v1 → v2). لا تُعدّل بياناتك.</p>
+    <button class="btn-ghost" style="width:100%;" onclick="runTestsAndShow()">تشغيل الاختبارات</button>
+  </div>
+
+  <div class="card">
+    <h3>🌱 بيانات تجريبية</h3>
+    <p class="small">تُنشئ 3 أيام تجريبية لمعاينة التقارير. يمكن حذفها فورًا.</p>
+    <button class="btn-ghost" style="width:100%;" onclick="injectTestData()">🌱 زرع بيانات تجريبية</button>
+    <button class="btn-danger" style="width:100%;margin-top:8px;" onclick="removeTestData()">🗑️ حذف البيانات التجريبية</button>
+  </div>
+</section>
+
+</div>
+
+<nav>
+  <button class="active" data-page="home" onclick="showPage('home', this)">🏠<span>الرئيسية</span></button>
+  <button data-page="tasks" onclick="showPage('tasks', this)">📝<span>المهام</span></button>
+  <button data-page="stats" onclick="showPage('stats', this)">📊<span>الإحصائيات</span></button>
+  <button data-page="settings" onclick="showPage('settings', this)">⚙️<span>الإعدادات</span></button>
+</nav>
+
+<div id="toastContainer"></div>
+
+<div id="customModalOverlay" class="modal-overlay hidden">
+  <div class="modal-card">
+    <div id="modalTitle" class="modal-header">تنبيه</div>
+    <div id="modalBody" class="modal-body"></div>
+    <div id="modalFooter" class="modal-footer"></div>
+  </div>
+</div>
+
+<script>
+const STORAGE_KEY = "timeTasksApp_v1";
+const BACKUP_KEY = "timeTasksApp_backup_v1";
+const PRE_IMPORT_KEY = "timeTasksApp_preImportBackup";
+const TEST_FLAG_KEY = "timeTasksApp_testInjected";
+const CURRENT_SCHEMA_VERSION = 2;
+const APP_VERSION = "2.6.0";
+const BACKUP_FORMAT_VERSION = 1;
+
+const VALID_TYPES = ["معرفية", "إدارية", "إبداعية", "اجتماعية"];
+const VALID_STATUS = ["pending", "done", "partial", "cancelled"];
+const VALID_ENERGY = ["منخفض", "متوسط", "مرتفع"];
+const DATE_REGEX = /^\d{4}-\d{2}-\d{2}$/;
+const TIME_REGEX = /^\d{2}:\d{2}$/;
+const LOCALDATETIME_REGEX = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}$/;
+
+let tasks = [];
+let editingId = null;
+let currentFilter = "all";
+let lastPct = 0;
+let appSettings = { operationalDayStart: 4, firstUseDate: null, darkMode: false };
+let createdByVersion = APP_VERSION;
+
+/* ============ Toast & Modals ============ */
+
+function showToast(message) {
+  const container = document.getElementById('toastContainer');
+  if (!container) return;
+  const toast = document.createElement('div');
+  toast.className = 'toast';
+  toast.textContent = String(message);
+  container.appendChild(toast);
+  setTimeout(function() {
+    toast.classList.add('fade-out');
+    setTimeout(function() { toast.remove(); }, 300);
+  }, 3000);
+}
+
+let _modalKeyHandler = null;
+let _modalCancelCallback = null;
+
+function closeModal() {
+  const overlay = document.getElementById('customModalOverlay');
+  if (overlay) overlay.classList.add('hidden');
+  if (_modalKeyHandler) {
+    document.removeEventListener('keydown', _modalKeyHandler);
+    _modalKeyHandler = null;
+  }
+  _modalCancelCallback = null;
+}
+
+function showAlertModal(title, htmlText) {
+  const overlay = document.getElementById('customModalOverlay');
+  document.getElementById('modalTitle').textContent = title;
+  document.getElementById('modalBody').innerHTML = '<p style="margin:0;line-height:1.6;">' + htmlText + '</p>';
+  document.getElementById('modalFooter').innerHTML = '<button class="btn-primary" onclick="closeModal()">حسنًا</button>';
+  overlay.classList.remove('hidden');
+  _modalKeyHandler = function(e) {
+    if (e.key === "Escape" || e.key === "Enter") { e.preventDefault(); closeModal(); }
+  };
+  document.addEventListener('keydown', _modalKeyHandler);
+}
+
+function showConfirmModal(title, htmlText, onConfirm, onCancel) {
+  const overlay = document.getElementById('customModalOverlay');
+  document.getElementById('modalTitle').textContent = title;
+  document.getElementById('modalBody').innerHTML = '<p style="margin:0;line-height:1.6;">' + htmlText + '</p>';
+  document.getElementById('modalFooter').innerHTML =
+    '<button class="btn-ghost" id="modalCancelBtn">إلغاء</button>' +
+    '<button class="btn-danger" id="modalConfirmBtn">تأكيد</button>';
+  _modalCancelCallback = onCancel || null;
+  document.getElementById('modalCancelBtn').onclick = function() {
+    const cb = _modalCancelCallback;
+    closeModal();
+    if (cb) cb();
+  };
+  document.getElementById('modalConfirmBtn').onclick = function() {
+    closeModal();
+    if (onConfirm) onConfirm();
+  };
+  overlay.classList.remove('hidden');
+  _modalKeyHandler = function(e) {
+    if (e.key === "Escape") { e.preventDefault(); document.getElementById('modalCancelBtn').click(); }
+    else if (e.key === "Enter") { e.preventDefault(); document.getElementById('modalConfirmBtn').click(); }
+  };
+  document.addEventListener('keydown', _modalKeyHandler);
+}
+
+function showPromptModal(title, htmlText, defaultValue, placeholder, onSubmit, onCancel) {
+  const overlay = document.getElementById('customModalOverlay');
+  const titleEl = document.getElementById('modalTitle');
+  const bodyEl = document.getElementById('modalBody');
+  const footerEl = document.getElementById('modalFooter');
+
+  titleEl.textContent = title;
+  bodyEl.innerHTML = '';
+  const p = document.createElement('p');
+  p.style.margin = '0 0 10px';
+  p.style.lineHeight = '1.6';
+  p.innerHTML = htmlText;
+  bodyEl.appendChild(p);
+
+  const inputEl = document.createElement('input');
+  inputEl.type = 'text';
+  inputEl.id = 'modalPromptInput';
+  inputEl.value = (defaultValue !== null && defaultValue !== undefined) ? String(defaultValue) : '';
+  if (placeholder) inputEl.placeholder = placeholder;
+  bodyEl.appendChild(inputEl);
+
+  footerEl.innerHTML = '';
+  const cancelBtn = document.createElement('button');
+  cancelBtn.className = 'btn-ghost';
+  cancelBtn.id = 'modalCancelBtn';
+  cancelBtn.textContent = 'إلغاء';
+  const submitBtn = document.createElement('button');
+  submitBtn.className = 'btn-primary';
+  submitBtn.id = 'modalSubmitBtn';
+  submitBtn.textContent = 'تأكيد';
+  footerEl.appendChild(cancelBtn);
+  footerEl.appendChild(submitBtn);
+
+  setTimeout(function() { inputEl.focus(); inputEl.select(); }, 100);
+
+  _modalCancelCallback = onCancel || null;
+  cancelBtn.onclick = function() {
+    const cb = _modalCancelCallback;
+    closeModal();
+    if (cb) cb();
+  };
+  submitBtn.onclick = function() {
+    const val = inputEl.value;
+    closeModal();
+    if (onSubmit) onSubmit(val);
+  };
+
+  overlay.classList.remove('hidden');
+  _modalKeyHandler = function(e) {
+    if (e.key === "Escape") { e.preventDefault(); cancelBtn.click(); }
+    else if (e.key === "Enter") { e.preventDefault(); submitBtn.click(); }
+  };
+  document.addEventListener('keydown', _modalKeyHandler);
+}
+
+/* ✅ إضافة: النقر على خلفية الـModal يُغلقه (مستمع واحد عند التحميل) */
+document.getElementById('customModalOverlay').addEventListener('mousedown', function(e) {
+  if (e.target !== this) return;
+  const overlay = this;
+  if (overlay.classList.contains('hidden')) return;
+  const cancelBtn = document.getElementById('modalCancelBtn');
+  if (cancelBtn) cancelBtn.click();
+  else closeModal();
+});
+
+/* ============ دوال التاريخ ============ */
+
+function todayStr() {
+  const d = new Date();
+  if (d.getHours() < 4) d.setDate(d.getDate() - 1);
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return y + "-" + m + "-" + day;
+}
+
+function localDateTimeString() {
+  const d = new Date();
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  const h = String(d.getHours()).padStart(2, "0");
+  const min = String(d.getMinutes()).padStart(2, "0");
+  const s = String(d.getSeconds()).padStart(2, "0");
+  return y + "-" + m + "-" + day + "T" + h + ":" + min + ":" + s;
+}
+
+function isValidCalendarDate(str) {
+  if (typeof str !== "string" || !DATE_REGEX.test(str)) return false;
+  const p = str.split("-");
+  const y = Number(p[0]), m = Number(p[1]), d = Number(p[2]);
+  if (m < 1 || m > 12 || d < 1 || d > 31) return false;
+  const t = new Date(y, m - 1, d);
+  return t.getFullYear() === y && t.getMonth() === m - 1 && t.getDate() === d;
+}
+
+function isValidLocalTime(str) {
+  if (typeof str !== "string") return false;
+  if (str === "") return true;
+  if (!TIME_REGEX.test(str)) return false;
+  const p = str.split(":");
+  const h = Number(p[0]), m = Number(p[1]);
+  return h >= 0 && h <= 23 && m >= 0 && m <= 59;
+}
+
+function isValidLocalDateTime(str) {
+  if (typeof str !== "string") return false;
+  if (!LOCALDATETIME_REGEX.test(str)) return false;
+  const p = str.split("T");
+  if (!isValidCalendarDate(p[0])) return false;
+  const t = p[1].split(":");
+  const h = Number(t[0]), m = Number(t[1]), s = Number(t[2]);
+  return h >= 0 && h <= 23 && m >= 0 && m <= 59 && s >= 0 && s <= 59;
+}
+
+function parseTaskDate(dateStr, timeStr) {
+  if (!dateStr || !isValidCalendarDate(dateStr)) return null;
+  if (!timeStr) {
+    const d = new Date(dateStr + "T00:00:00");
+    if (isNaN(d.getTime())) return null;
+    d.setDate(d.getDate() + 1);
+    d.setHours(appSettings.operationalDayStart, 0, 0, -1);
+    return d;
+  }
+  if (!isValidLocalTime(timeStr)) return null;
+  const ft = timeStr.length === 5 ? timeStr + ":00" : timeStr;
+  const d = new Date(dateStr + "T" + ft);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+function computeGap(expected, actual) {
+  if (actual === null || actual === undefined) return 0;
+  if (!expected || expected <= 0) return 0;
+  return (actual - expected) / expected;
+}
+
+function isTaskDone(t) { return t.status === "done"; }
+
+/* ============ IDs ============ */
+
+function generateUniqueTaskId(existingIds) {
+  let id, attempts = 0;
+  do {
+    id = Date.now() + Math.floor(Math.random() * 1000000);
+    attempts++;
+    if (attempts > 100) { id = Date.now() + existingIds.size + 1; break; }
+  } while (existingIds.has(id));
+  existingIds.add(id);
+  return id;
+}
+
+function getNextTaskId() {
+  const used = new Set(tasks.map(function(t) { return t.id; }));
+  return generateUniqueTaskId(used);
+}
+
+/* ============ Validation ============ */
+
+function validateDailyLog(log) {
+  if (!log || typeof log !== "object" || Array.isArray(log)) return false;
+  if (typeof log.date !== "string" || !isValidCalendarDate(log.date)) return false;
+
+  const ratingFields = ["control", "execution", "wellbeing"];
+  for (let i = 0; i < ratingFields.length; i++) {
+    const v = log[ratingFields[i]];
+    if (v !== null && v !== undefined) {
+      if (typeof v !== "number" || !Number.isInteger(v) || v < 1 || v > 5) return false;
+    }
+  }
+
+  if (log.energy !== null && log.energy !== undefined) {
+    if (typeof log.energy !== "string" || !VALID_ENERGY.includes(log.energy)) return false;
+  }
+
+  if (log.distractions !== null && log.distractions !== undefined) {
+    if (typeof log.distractions !== "number" || !Number.isInteger(log.distractions) || log.distractions < 0) return false;
+  }
+
+  if (log.bufferUsed !== null && log.bufferUsed !== undefined) {
+    if (typeof log.bufferUsed !== "string") return false;
+  }
+
+  if (log.mentalTask !== undefined && typeof log.mentalTask !== "string") return false;
+  if (log.mentalNext !== undefined && typeof log.mentalNext !== "string") return false;
+
+  if (log.createdAt !== undefined) {
+    if (typeof log.createdAt !== "number" || !Number.isFinite(log.createdAt)) return false;
+  }
+  if (log.updatedAt !== undefined) {
+    if (typeof log.updatedAt !== "number" || !Number.isFinite(log.updatedAt)) return false;
+  }
+
+  return true;
+}
+
+function validateV2(data) {
+  if (!data || typeof data !== "object" || Array.isArray(data)) return false;
+  if (data.schemaVersion !== CURRENT_SCHEMA_VERSION) return false;
+  if (!Array.isArray(data.tasks)) return false;
+  if (!Array.isArray(data.dailyLogs)) return false;
+
+  for (let i = 0; i < data.tasks.length; i++) {
+    const t = data.tasks[i];
+    if (!t || typeof t !== "object" || Array.isArray(t)) return false;
+    if (typeof t.id !== "number" || !Number.isFinite(t.id)) return false;
+    if (typeof t.name !== "string") return false;
+    if (typeof t.status !== "string" || !VALID_STATUS.includes(t.status)) return false;
+    if (typeof t.type !== "string" || !VALID_TYPES.includes(t.type)) return false;
+    if (typeof t.expected !== "number" || !Number.isFinite(t.expected) || t.expected < 0) return false;
+    if (t.actual !== null && (typeof t.actual !== "number" || !Number.isFinite(t.actual) || t.actual < 0)) return false;
+    if (typeof t.plannedDate !== "string" || !isValidCalendarDate(t.plannedDate)) return false;
+    if (typeof t.plannedTime !== "string" || !isValidLocalTime(t.plannedTime)) return false;
+    if (t.completedAt !== null && !isValidLocalDateTime(t.completedAt)) return false;
+    if (typeof t.createdAt !== "number" || !Number.isFinite(t.createdAt) || t.createdAt <= 0) return false;
+    if (t.status !== "done" && t.completedAt !== null) return false;
+  }
+
+  const dates = new Set();
+  for (let i = 0; i < data.dailyLogs.length; i++) {
+    const log = data.dailyLogs[i];
+    if (!validateDailyLog(log)) return false;
+    if (dates.has(log.date)) return false;
+    dates.add(log.date);
+  }
+  return true;
+}
+
+/* ============ Migration ============ */
+
+function isValidTaskObject(item) {
+  return item !== null && typeof item === "object" && !Array.isArray(item);
+}
+
+function migrateTaskV1toV2(rawTask, existingIds) {
+  const repairs = [];
+  let id;
+  if (typeof rawTask.id === "number" && Number.isFinite(rawTask.id)) {
+    if (existingIds.has(rawTask.id)) { id = generateUniqueTaskId(existingIds); repairs.push("duplicate_id"); }
+    else { id = rawTask.id; existingIds.add(id); }
+  } else { id = generateUniqueTaskId(existingIds); repairs.push("missing_id"); }
+
+  let name = rawTask.name;
+  if (typeof name !== "string") { name = "(بلا اسم)"; repairs.push("invalid_name"); }
+  else {
+    name = name.trim();
+    if (name === "") { name = "(بلا اسم)"; repairs.push("empty_name"); }
+    else if (name.length > 500) { name = name.slice(0, 500); repairs.push("name_truncated"); }
+  }
+
+  let type = rawTask.type;
+  if (typeof type !== "string" || !VALID_TYPES.includes(type)) {
+    type = "معرفية";
+    if (rawTask.type !== undefined) repairs.push("invalid_type");
+  }
+
+  let status = "pending";
+  if (rawTask.completed === true) status = "done";
+  else if (rawTask.completed === false || rawTask.completed === undefined) status = "pending";
+  else { status = "pending"; repairs.push("invalid_completed_flag"); }
+
+  let expected = Number(rawTask.expected);
+  if (!Number.isFinite(expected) || expected < 0) {
+    expected = 0;
+    if (rawTask.expected !== undefined && rawTask.expected !== null && rawTask.expected !== "")
+      repairs.push("invalid_expected");
+  }
+  expected = Math.floor(expected);
+
+  let actual = null;
+  if (rawTask.actual !== null && rawTask.actual !== undefined && rawTask.actual !== "") {
+    const a = Number(rawTask.actual);
+    if (Number.isFinite(a) && a >= 0) actual = Math.floor(a);
+    else repairs.push("invalid_actual");
+  }
+
+  let plannedDate = rawTask.date || rawTask.plannedDate;
+  if (typeof plannedDate !== "string" || !isValidCalendarDate(plannedDate)) {
+    plannedDate = todayStr();
+    if (rawTask.date !== undefined || rawTask.plannedDate !== undefined) repairs.push("invalid_plannedDate");
+  }
+
+  let plannedTime = rawTask.time || rawTask.plannedTime || "";
+  if (typeof plannedTime !== "string" || !isValidLocalTime(plannedTime)) {
+    plannedTime = "";
+    if (rawTask.time !== undefined || rawTask.plannedTime !== undefined) repairs.push("invalid_plannedTime");
+  }
+
+  let completedAt = null;
+  if (status === "done" && typeof rawTask.completedAt === "string"
+      && isValidLocalDateTime(rawTask.completedAt)) completedAt = rawTask.completedAt;
+  else if (rawTask.completedAt !== undefined && rawTask.completedAt !== null) {
+    if (status === "done") repairs.push("invalid_completedAt");
+    else repairs.push("completedAt_without_done");
+  }
+
+  let createdAt = Number(rawTask.createdAt);
+  if (!Number.isFinite(createdAt) || createdAt <= 0) { createdAt = Date.now(); repairs.push("invalid_createdAt"); }
+
+  return {
+    task: { id, name, type, status, expected, actual, plannedDate, plannedTime, completedAt, createdAt },
+    repairs
+  };
+}
+
+function buildEmptyV2(firstUseDate) {
+  return {
+    schemaVersion: CURRENT_SCHEMA_VERSION,
+    createdByVersion: APP_VERSION,
+    settings: {
+      operationalDayStart: 4,
+      firstUseDate: firstUseDate || todayStr(),
+      darkMode: false
+    },
+    tasks: [],
+    dailyLogs: []
+  };
+}
+
+function migrateV1ToV2() {
+  const report = {
+    date: new Date().toISOString(),
+    fromVersion: 1, toVersion: 2,
+    totalOriginal: 0, migratedSuccessfully: 0, repaired: 0,
+    unrecoverable: 0, unrecoverableItems: [], repairsByType: {},
+    backupKey: BACKUP_KEY, recoveredFromBackup: false,
+    success: false, error: null
+  };
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(buildEmptyV2()));
+      report.success = true;
+      return report;
+    }
+    let parsed = null, mainCorrupt = false;
+    try {
+      parsed = JSON.parse(raw);
+      if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) { mainCorrupt = true; parsed = null; }
+    } catch (e) { mainCorrupt = true; }
+
+    if (mainCorrupt) {
+      const backupRaw = localStorage.getItem(BACKUP_KEY);
+      if (!backupRaw) { report.error = "JSON_parse_failed_no_backup"; return report; }
+      try {
+        const bp = JSON.parse(backupRaw);
+        if (!bp || typeof bp !== "object" || Array.isArray(bp)) { report.error = "JSON_parse_failed_backup_invalid"; return report; }
+        parsed = bp; report.recoveredFromBackup = true;
+      } catch (e2) { report.error = "JSON_parse_failed_backup_also_corrupt"; return report; }
+    }
+
+    const sv = parsed.schemaVersion;
+
+    if (sv === CURRENT_SCHEMA_VERSION) {
+      if (validateV2(parsed)) { report.success = true; report.fromVersion = 2; return report; }
+      const backupRaw = localStorage.getItem(BACKUP_KEY);
+      if (backupRaw) {
+        try {
+          const bp = JSON.parse(backupRaw);
+          if (validateV2(bp)) {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(bp));
+            report.success = true; report.fromVersion = 2; report.recoveredFromBackup = true;
+            return report;
+          }
+        } catch (e) {}
+      }
+      report.error = "v2_invalid_no_recovery"; return report;
+    }
+
+    if (sv !== undefined && sv !== 1) { report.error = "unknown_schema_version_" + sv; return report; }
+
+    if (!report.recoveredFromBackup) localStorage.setItem(BACKUP_KEY, raw);
+
+    const rawTasks = Array.isArray(parsed.tasks) ? parsed.tasks : [];
+    report.totalOriginal = rawTasks.length;
+    const existingIds = new Set();
+    const migratedTasks = [];
+    const repairsAggregate = {};
+
+    rawTasks.forEach(function(item, index) {
+      if (!isValidTaskObject(item)) {
+        report.unrecoverable++;
+        report.unrecoverableItems.push({ index, rawType: item === null ? "null" : typeof item, reason: "not_a_task_object" });
+        return;
+      }
+      const result = migrateTaskV1toV2(item, existingIds);
+      migratedTasks.push(result.task);
+      if (result.repairs.length > 0) {
+        report.repaired++;
+        result.repairs.forEach(function(r) { repairsAggregate[r] = (repairsAggregate[r] || 0) + 1; });
+      } else report.migratedSuccessfully++;
+    });
+
+    report.repairsByType = repairsAggregate;
+
+    let firstUseDate;
+    if (migratedTasks.length > 0) {
+      const minCreatedAt = Math.min.apply(null, migratedTasks.map(function(t) { return t.createdAt; }));
+      const d = new Date(minCreatedAt);
+      firstUseDate = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+    } else firstUseDate = todayStr();
+
+    const v2Data = {
+      schemaVersion: CURRENT_SCHEMA_VERSION,
+      createdByVersion: APP_VERSION,
+      settings: { operationalDayStart: 4, firstUseDate, darkMode: false },
+      tasks: migratedTasks,
+      dailyLogs: []
+    };
+
+    if (!validateV2(v2Data)) { report.error = "generated_v2_invalid"; return report; }
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(v2Data));
+    report.success = true;
+    return report;
+  } catch (e) {
+    report.error = e.message || "unknown_error";
+    return report;
+  }
+}
+
+/* ============ Storage ============ */
+
+function loadData() {
+  const report = migrateV1ToV2();
+  if (!report.success) {
+    console.error("Migration failed:", report.error);
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      if (raw) {
+        const data = JSON.parse(raw);
+        if (data && Array.isArray(data.tasks) && validateV2(data)) {
+          tasks = data.tasks;
+          appSettings = data.settings || appSettings;
+          createdByVersion = data.createdByVersion || APP_VERSION;
+        } else tasks = [];
+      } else tasks = [];
+    } catch (e) { tasks = []; }
+    setTimeout(function() {
+      showAlertModal("تعذر ترقية البيانات", "السبب: " + report.error + "<br>بياناتك الأصلية محفوظة ولم تُلمس.");
+    }, 400);
+    return;
+  }
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    const data = raw ? JSON.parse(raw) : null;
+    if (data && validateV2(data)) {
+      tasks = data.tasks;
+      appSettings = data.settings || appSettings;
+      createdByVersion = data.createdByVersion || APP_VERSION;
+      if (appSettings.darkMode) document.body.classList.add("dark-mode");
+      else document.body.classList.remove("dark-mode");
+    } else tasks = [];
+  } catch (e) { tasks = []; }
+
+  if (report.fromVersion === 1 && report.totalOriginal > 0) {
+    const lines = ["تم تحديث بنية البيانات بنجاح."];
+    lines.push("المهام: " + report.totalOriginal);
+    lines.push("منقولة سليمة: " + report.migratedSuccessfully);
+    lines.push("مُصلَحة: " + report.repaired);
+    if (report.unrecoverable > 0) lines.push("غير قابلة للترحيل: " + report.unrecoverable + " (محفوظة في النسخة الاحتياطية)");
+    if (report.recoveredFromBackup) lines.unshift("ℹ️ تم الاستعادة من النسخة الاحتياطية.");
+    setTimeout(function() { showAlertModal("ترقية النظام", lines.join("<br>")); }, 400);
+  }
+}
+
+function saveData() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    let existing = {};
+    try {
+      existing = raw ? JSON.parse(raw) : {};
+      if (!existing || typeof existing !== "object" || Array.isArray(existing)) existing = {};
+    } catch (e) { existing = {}; }
+
+    const createdVer = existing.createdByVersion || APP_VERSION;
+    const v2 = {
+      schemaVersion: CURRENT_SCHEMA_VERSION,
+      createdByVersion: createdVer,
+      settings: {
+        operationalDayStart: appSettings.operationalDayStart || 4,
+        firstUseDate: appSettings.firstUseDate || todayStr(),
+        darkMode: appSettings.darkMode || false
+      },
+      tasks: tasks,
+      dailyLogs: existing.dailyLogs || []
+    };
+
+    if (!validateV2(v2)) {
+      console.error("saveData: refusing to write invalid data");
+      showAlertModal("تنبيه الحفظ", "تعذر حفظ البيانات — البنية غير صالحة. لم يتم تعديل التخزين.");
+      return false;
+    }
+
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(v2));
+    return true;
+  } catch (e) {
+    showAlertModal("تنبيه الحفظ", "تعذر حفظ البيانات. مساحة التخزين المحلية ممتلئة.");
+    return false;
+  }
+}
+
+/* ============ Daily Log ============ */
+
+function getTodayLog() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    const data = JSON.parse(raw);
+    if (!data || !Array.isArray(data.dailyLogs)) return null;
+    const today = todayStr();
+    return data.dailyLogs.find(function(l) { return l.date === today; }) || null;
+  } catch (e) { return null; }
+}
+
+function getOrCreateTodayLog() {
+  const existing = getTodayLog();
+  if (existing) return existing;
+  return {
+    date: todayStr(),
+    control: null, execution: null, wellbeing: null,
+    energy: null, distractions: null, bufferUsed: null,
+    mentalTask: "", mentalNext: "",
+    createdAt: Date.now(), updatedAt: Date.now()
+  };
+}
+
+function persistDailyLog(log) {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    const data = JSON.parse(raw);
+    if (!data || !Array.isArray(data.dailyLogs)) return;
+    const idx = data.dailyLogs.findIndex(function(l) { return l.date === log.date; });
+    if (idx >= 0) data.dailyLogs[idx] = log;
+    else data.dailyLogs.push(log);
+    if (!validateV2(data)) {
+      console.error("persistDailyLog: refusing to write invalid data");
+      return;
+    }
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+  } catch (e) {
+    console.error("Failed to persist daily log:", e);
+    /* ✅ إضافة: تنبيه المستخدم عند فشل الحفظ */
+    showToast("⚠️ تعذر حفظ تقييم اليوم — تحقق من مساحة التخزين");
+  }
+}
+
+function setDailyRating(field, value) {
+  const log = getOrCreateTodayLog();
+  log[field] = (log[field] === value) ? null : value;
+  log.updatedAt = Date.now();
+  persistDailyLog(log);
+  renderDailyLog();
+  renderWeeklyReport();
+}
+
+function setDailyEnergy(value) {
+  const log = getOrCreateTodayLog();
+  log.energy = (log.energy === value) ? null : value;
+  log.updatedAt = Date.now();
+  persistDailyLog(log);
+  renderDailyLog();
+  renderWeeklyReport();
+}
+
+function setDailyDistractions(value) {
+  const log = getOrCreateTodayLog();
+  if (value === "" || value === null) log.distractions = null;
+  else {
+    const n = Number(value);
+    log.distractions = (Number.isFinite(n) && n >= 0 && Number.isInteger(Math.floor(n))) ? Math.floor(n) : null;
+  }
+  log.updatedAt = Date.now();
+  persistDailyLog(log);
+  renderDailyLog();
+  renderWeeklyReport();
+}
+
+function setDailyMental(field, value) {
+  const log = getOrCreateTodayLog();
+  log[field] = String(value || "");
+  log.updatedAt = Date.now();
+  persistDailyLog(log);
+  renderDailyLog();
+}
+
+function renderDailyLog() {
+  const log = getTodayLog();
+  ["control", "execution", "wellbeing"].forEach(function(field) {
+    const container = document.getElementById("rating-" + field);
+    if (!container) return;
+    container.querySelectorAll("button").forEach(function(btn) {
+      const v = Number(btn.dataset.v);
+      btn.classList.toggle("active", !!(log && log[field] === v));
+    });
+  });
+  const energyBox = document.getElementById("energy-buttons");
+  if (energyBox) {
+    energyBox.querySelectorAll("button").forEach(function(btn) {
+      btn.classList.toggle("active", !!(log && log.energy === btn.dataset.v));
+    });
+  }
+  const distInput = document.getElementById("dailyLogDistractions");
+  if (distInput && document.activeElement !== distInput) {
+    distInput.value = (log && log.distractions !== null && log.distractions !== undefined) ? log.distractions : "";
+  }
+  const mt = document.getElementById("dailyLogMentalTask");
+  const mn = document.getElementById("dailyLogMentalNext");
+  if (mt && document.activeElement !== mt) mt.value = log ? (log.mentalTask || "") : "";
+  if (mn && document.activeElement !== mn) mn.value = log ? (log.mentalNext || "") : "";
+  const status = document.getElementById("dailyLogStatus");
+  if (status) {
+    if (log) {
+      const filled = [log.control, log.execution, log.wellbeing, log.energy]
+        .filter(function(v) { return v !== null && v !== undefined; }).length;
+      status.textContent = "✓ " + filled + "/4 محفوظ";
+      status.classList.remove("empty");
+    } else {
+      status.textContent = "لم يُسجَّل بعد";
+      status.classList.add("empty");
+    }
+  }
+}
+
+/* ============ Tasks CRUD ============ */
+
+function saveTask() {
+  const name = document.getElementById("taskName").value.trim();
+  const type = document.getElementById("taskType").value;
+  const expected = Number(document.getElementById("taskExpected").value);
+  const date = document.getElementById("taskDate").value || todayStr();
+  const time = document.getElementById("taskTime").value;
+
+  if (!name) { showAlertModal("خطأ", "يرجى كتابة اسم المهمة"); return; }
+  if (!expected || expected <= 0) { showAlertModal("خطأ", "أدخل الزمن المتوقع بصورة صحيحة"); return; }
+  if (!isValidCalendarDate(date)) { showAlertModal("خطأ", "التاريخ المحدد غير صالح"); return; }
+  if (time !== "" && !isValidLocalTime(time)) { showAlertModal("خطأ", "الوقت المحدد غير صالح"); return; }
+
+  if (editingId !== null) {
+    const t = tasks.find(function(x) { return x.id === editingId; });
+    if (!t) { cancelEdit(); return; }
+
+    const actualRaw = document.getElementById("taskActual").value.trim();
+    const hadActualBefore = (t.actual !== null && t.actual !== undefined);
+
+    t.name = name;
+    t.type = type;
+    t.expected = expected;
+    t.plannedDate = date;
+    t.plannedTime = time;
+
+    if (actualRaw !== "") {
+      const actual = Number(actualRaw);
+      if (isNaN(actual) || actual < 0) { showAlertModal("خطأ", "المدة الفعلية غير صالحة"); return; }
+      t.actual = Math.floor(actual);
+      t.status = "done";
+      if (!t.completedAt) t.completedAt = localDateTimeString();
+    } else if (hadActualBefore) {
+      t.actual = null;
+      t.status = "pending";
+      t.completedAt = null;
+    } else {
+      t.actual = null;
+    }
+
+    cancelEdit();
+    showToast("✏️ تم تعديل المهمة");
+  } else {
+    tasks.push({
+      id: getNextTaskId(), name, type, status: "pending",
+      expected, actual: null, plannedDate: date, plannedTime: time,
+      completedAt: null, createdAt: Date.now()
+    });
+    clearForm();
+    showToast("➕ تمت إضافة المهمة");
+  }
+
+  if (saveData()) renderAll();
+}
+
+function clearForm() {
+  document.getElementById("taskName").value = "";
+  document.getElementById("taskExpected").value = "";
+  document.getElementById("taskActual").value = "";
+  document.getElementById("taskActual").classList.add("hidden");
+  document.getElementById("taskDate").value = todayStr();
+  document.getElementById("taskTime").value = "";
+  document.getElementById("taskType").value = "معرفية";
+}
+
+function editTask(id) {
+  const t = tasks.find(function(x) { return x.id === id; });
+  if (!t) return;
+  editingId = id;
+  document.getElementById("taskName").value = t.name;
+  document.getElementById("taskType").value = t.type || "معرفية";
+  document.getElementById("taskExpected").value = t.expected || "";
+  document.getElementById("taskActual").value = (t.actual !== null && t.actual !== undefined) ? t.actual : "";
+  document.getElementById("taskActual").classList.remove("hidden");
+  document.getElementById("taskDate").value = t.plannedDate || todayStr();
+  document.getElementById("taskTime").value = t.plannedTime || "";
+  document.getElementById("taskFormTitle").textContent = "✏️ تعديل المهمة";
+  document.getElementById("taskSaveBtn").textContent = "حفظ التعديل";
+  document.getElementById("taskCancelBtn").classList.remove("hidden");
+  const navTaskBtn = document.querySelector('nav button[data-page="tasks"]');
+  showPage("tasks", navTaskBtn);
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function cancelEdit() {
+  editingId = null;
+  clearForm();
+  document.getElementById("taskFormTitle").textContent = "➕ إضافة مهمة";
+  document.getElementById("taskSaveBtn").textContent = "إضافة المهمة";
+  document.getElementById("taskCancelBtn").classList.add("hidden");
+}
+
+function toggleTask(id) {
+  const t = tasks.find(function(x) { return x.id === id; });
+  if (!t) return;
+  if (t.status !== "done") {
+    showPromptModal(
+      "⏱️ المدة الفعلية المسجلة",
+      "أدخل المدة الفعلية بالدقائق التي استغرقتها المهمة.<br><small class='small'>اترك الحقل فارغًا لوضع علامة إنجاز فقط.</small>",
+      (t.expected !== null && t.expected !== undefined) ? t.expected : "",
+      "الزمن بالدقائق",
+      function(raw) {
+        if (raw === null) return;
+        const valStr = String(raw).trim();
+        if (valStr === "") {
+          t.actual = null;
+        } else {
+          const n = Number(valStr);
+          if (isNaN(n) || n <= 0) { showAlertModal("تنبيه", "أدخل رقمًا صحيحًا أكبر من صفر"); return; }
+          t.actual = Math.floor(n);
+        }
+        t.status = "done";
+        t.completedAt = localDateTimeString();
+        if (saveData()) {
+          renderAll();
+          showToast("🎉 ممتاز! تم إنجاز المهمة");
+        }
+      }
+    );
+  } else {
+    t.status = "pending"; t.actual = null; t.completedAt = null;
+    if (saveData()) {
+      renderAll();
+      showToast("↩️ تم التراجع عن الإنجاز");
+    }
+  }
+}
+
+function deleteTask(id) {
+  showConfirmModal("حذف المهمة", "هل أنت متأكد من حذف هذه المهمة نهائيًا؟", function() {
+    tasks = tasks.filter(function(x) { return x.id !== id; });
+    if (editingId === id) cancelEdit();
+    if (saveData()) {
+      renderAll();
+      showToast("🗑️ تم حذف المهمة");
+    }
+  });
+}
+
+function quickAdd() {
+  const nameInput = document.getElementById("quickName");
+  const expectedInput = document.getElementById("quickExpected");
+  const name = nameInput.value.trim();
+  const expected = Number(expectedInput.value);
+  if (!name) { showAlertModal("تنبيه", "اكتب اسم المهمة أولًا"); return; }
+  if (!expected || expected <= 0) { showAlertModal("تنبيه", "أدخل الزمن المتوقع بشكل صحيح"); return; }
+  tasks.push({
+    id: getNextTaskId(), name, type: "معرفية", status: "pending",
+    expected, actual: null, plannedDate: todayStr(), plannedTime: "",
+    completedAt: null, createdAt: Date.now()
+  });
+  if (saveData()) {
+    nameInput.value = "";
+    expectedInput.value = "";
+    renderAll();
+    showToast("➕ تمت الإضافة السريعة");
+    nameInput.focus();
+  }
+}
+
+/* ============ Task Helpers ============ */
+
+function isLate(t) {
+  if (isTaskDone(t) || !t.plannedDate) return false;
+  const due = parseTaskDate(t.plannedDate, t.plannedTime);
+  return due && due < new Date();
+}
+
+function getStatus(t) {
+  if (isTaskDone(t)) return { text: "✅ منجزة", className: "done" };
+  if (!t.plannedDate) return { text: "بدون موعد", className: "" };
+  const due = parseTaskDate(t.plannedDate, t.plannedTime);
+  if (!due) return { text: "بدون موعد", className: "" };
+  const diff = due - new Date();
+  if (diff < 0) return { text: "⚠️ متأخرة", className: "late" };
+  if (diff < 24 * 3600 * 1000) return { text: "⏰ قريبًا", className: "soon" };
+  return { text: "📅 قادمة", className: "" };
+}
+
+function formatDate(date) {
+  if (!date) return "غير محدد";
+  const p = date.split("-");
+  return p.length === 3 ? p[2] + "/" + p[1] + "/" + p[0] : date;
+}
+
+function escapeHTML(s) {
+  const d = document.createElement("div");
+  d.textContent = String(s);
+  return d.innerHTML;
+}
+
+function gapClass(gap) {
+  if (gap > 0.05) return "gap positive";
+  if (gap < -0.05) return "gap negative";
+  return "gap neutral";
+}
+
+function gapText(gap) {
+  const pct = Math.round(gap * 100);
+  return (pct > 0 ? "+" : "") + pct + "%";
+}
+
+function gapMetricClass(gap) {
+  if (gap > 0.05) return "positive";
+  if (gap < -0.05) return "negative";
+  return "neutral";
+}
+
+/* ============ Weekly Report ============ */
+
+function getLast7OperationalDays() {
+  const days = [];
+  const now = new Date();
+  if (now.getHours() < 4) now.setDate(now.getDate() - 1);
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(now);
+    d.setDate(d.getDate() - i);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, "0");
+    const day = String(d.getDate()).padStart(2, "0");
+    days.push(y + "-" + m + "-" + day);
+  }
+  return days;
+}
+
+function computeWeeklyReport() {
+  const days = getLast7OperationalDays();
+  const daySet = new Set(days);
+  let dailyLogs = [];
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const data = JSON.parse(raw);
+      if (data && Array.isArray(data.dailyLogs)) {
+        dailyLogs = data.dailyLogs.filter(function(l) { return daySet.has(l.date); });
+      }
+    }
+  } catch (e) {}
+  const weekTasks = tasks.filter(function(t) { return daySet.has(t.plannedDate); });
+
+  function avgOf(arr, key) {
+    const valid = arr.filter(function(l) { return l[key] !== null && l[key] !== undefined; });
+    if (valid.length === 0) return { avg: 0, count: 0 };
+    const sum = valid.reduce(function(s, l) { return s + l[key]; }, 0);
+    return { avg: sum / valid.length, count: valid.length };
+  }
+
+  const control = avgOf(dailyLogs, "control");
+  const execution = avgOf(dailyLogs, "execution");
+  const wellbeing = avgOf(dailyLogs, "wellbeing");
+
+  const tasksWithActual = weekTasks.filter(function(t) {
+    return t.actual !== null && t.actual !== undefined && t.expected > 0;
+  });
+  const gaps = tasksWithActual.map(function(t) { return (t.actual - t.expected) / t.expected; });
+  const avgGap = gaps.length > 0 ? gaps.reduce(function(s, g) { return s + g; }, 0) / gaps.length : 0;
+  const sumExp = tasksWithActual.reduce(function(s, t) { return s + t.expected; }, 0);
+  const sumAct = tasksWithActual.reduce(function(s, t) { return s + t.actual; }, 0);
+  const aggGap = sumExp > 0 ? (sumAct - sumExp) / sumExp : 0;
+  const sorted = gaps.slice().sort(function(a, b) { return a - b; });
+  const mid = Math.floor(sorted.length / 2);
+  const medianGap = sorted.length === 0 ? 0
+    : (sorted.length % 2 === 1 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2);
+
+  const doneTasks = weekTasks.filter(isTaskDone).length;
+  const totalDistractions = dailyLogs.reduce(function(s, l) { return s + (l.distractions || 0); }, 0);
+
+  return {
+    daysLogged: dailyLogs.length,
+    control, execution, wellbeing,
+    doneTasks, totalTasks: weekTasks.length,
+    avgGap, aggGap, medianGap, gapCount: tasksWithActual.length,
+    totalDistractions
+  };
+}
+
+function computeRecommendation(report) {
+  if (report.daysLogged < 3) return { type: "info", text: "📭 تحتاج 3 أيام مسجلة على الأقل. لديك " + report.daysLogged + "." };
+  if (report.wellbeing.count >= 3 && report.wellbeing.avg < 3)
+    return { type: "warn", text: "⚠️ الرفاه منخفض. وسّع الهامش المرن." };
+  if (report.execution.count >= 3 && report.execution.avg < 3) {
+    if (report.totalDistractions > 12)
+      return { type: "warn", text: "⚠️ التنفيذ منخفض والمقاطعات مرتفعة (" + report.totalDistractions + "). احمِ فترات التركيز." };
+    if (report.gapCount > 0) {
+      const mult = Math.max(0.25, 1 + report.aggGap);
+      return { type: "info", text: "⚠️ التنفيذ منخفض. معامل الضرب: " + mult.toFixed(2) + "." };
+    }
+  }
+  if (report.control.count >= 3 && report.control.avg < 3)
+    return { type: "warn", text: "⚠️ السيطرة منخفضة. احمِ أول 90 دقيقة من يومك." };
+  const good = report.control.count >= 3 && report.execution.count >= 3 && report.wellbeing.count >= 3
+    && report.control.avg >= 4 && report.execution.avg >= 4 && report.wellbeing.avg >= 4;
+  if (good) return { type: "success", text: "✅ توازن ممتاز. احتفظ بالمعاملات والأولويات." };
+  return { type: "info", text: "🟢 المؤشرات في نطاق جيد. استمر." };
+}
+
+function ratingClass(v) {
+  if (v >= 4) return "high";
+  if (v >= 3) return "mid";
+  return "low";
+}
+
+function renderWeeklyReport() {
+  const container = document.getElementById("weeklyReport");
+  if (!container) return;
+  const report = computeWeeklyReport();
+  if (report.daysLogged === 0 && report.totalTasks === 0) {
+    container.innerHTML = '<div class="empty">لا توجد بيانات هذا الأسبوع بعد.</div>';
+    return;
+  }
+  let html = '<div class="weekly-summary">';
+  html += '<div class="weekly-stat"><div class="weekly-stat-label">الأيام المسجلة</div><div class="weekly-stat-value">' + report.daysLogged + ' / 7</div></div>';
+  html += '<div class="weekly-stat"><div class="weekly-stat-label">المهام المنجزة</div><div class="weekly-stat-value">' + report.doneTasks + ' / ' + report.totalTasks + '</div></div>';
+  html += '</div>';
+  html += '<div class="weekly-metrics">';
+  if (report.control.count > 0)
+    html += '<div class="weekly-metric"><span class="weekly-metric-label">🎛️ السيطرة</span><span class="weekly-metric-value ' + ratingClass(report.control.avg) + '">' + report.control.avg.toFixed(1) + '</span></div>';
+  if (report.execution.count > 0)
+    html += '<div class="weekly-metric"><span class="weekly-metric-label">🎯 التنفيذ</span><span class="weekly-metric-value ' + ratingClass(report.execution.avg) + '">' + report.execution.avg.toFixed(1) + '</span></div>';
+  if (report.wellbeing.count > 0)
+    html += '<div class="weekly-metric"><span class="weekly-metric-label">🌿 الرفاه</span><span class="weekly-metric-value ' + ratingClass(report.wellbeing.avg) + '">' + report.wellbeing.avg.toFixed(1) + '</span></div>';
+  html += '<div class="weekly-metric"><span class="weekly-metric-label">🚧 المقاطعات</span><span class="weekly-metric-value">' + report.totalDistractions + '</span></div>';
+  html += '</div>';
+  if (report.gapCount > 0) {
+    html += '<div class="weekly-gap-section"><h4>⏱️ الفجوة الزمنية</h4>';
+    html += '<div class="weekly-metric"><span class="weekly-metric-label">متوسط فجوة المهام</span><span class="weekly-metric-value ' + gapMetricClass(report.avgGap) + '">' + gapText(report.avgGap) + '</span></div>';
+    html += '<div class="weekly-metric"><span class="weekly-metric-label">الفجوة المجمّعة</span><span class="weekly-metric-value ' + gapMetricClass(report.aggGap) + '">' + gapText(report.aggGap) + '</span></div>';
+    html += '<div class="weekly-metric"><span class="weekly-metric-label">وسيط الفجوة</span><span class="weekly-metric-value ' + gapMetricClass(report.medianGap) + '">' + gapText(report.medianGap) + '</span></div>';
+    html += '</div>';
+  }
+  const rec = computeRecommendation(report);
+  html += '<div class="weekly-recommendation ' + rec.type + '">' + rec.text + '</div>';
+  container.innerHTML = html;
+}
+
+/* ============ Type Analysis ============ */
+
+function computeTypeAnalysis(tp) {
+  const all = tasks.filter(function(t) { return t.type === tp; });
+  const done = all.filter(isTaskDone).length;
+  const withActual = all.filter(function(t) {
+    return t.actual !== null && t.actual !== undefined && t.expected > 0;
+  });
+  const gaps = withActual.map(function(t) { return (t.actual - t.expected) / t.expected; });
+  const avgGap = gaps.length > 0 ? gaps.reduce(function(s, g) { return s + g; }, 0) / gaps.length : 0;
+  const sumExp = withActual.reduce(function(s, t) { return s + t.expected; }, 0);
+  const sumAct = withActual.reduce(function(s, t) { return s + t.actual; }, 0);
+  const aggGap = sumExp > 0 ? (sumAct - sumExp) / sumExp : 0;
+  const sorted = gaps.slice().sort(function(a, b) { return a - b; });
+  const mid = Math.floor(sorted.length / 2);
+  const medianGap = sorted.length === 0 ? 0
+    : (sorted.length % 2 === 1 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2);
+  return { count: all.length, done, gapCount: gaps.length, avgGap, aggGap, medianGap };
+}
+
+function sampleWarning(count) {
+  if (count === 0) return { cls: "warn", text: "لا توجد مهام بزمن فعلي" };
+  if (count < 5) return { cls: "warn", text: "⚠️ عينة صغيرة — لا يُستنتج منها نمط" };
+  if (count < 15) return { cls: "info", text: "🟡 عينة متوسطة — استنتاج مبدئي" };
+  return { cls: "success", text: "🟢 عينة أكبر نسبيًا — لا تكفي وحدها لإثبات نمط ثابت" };
+}
+
+function renderTypeGapAnalysis() {
+  const container = document.getElementById("typeGapAnalysis");
+  if (!container) return;
+  const types = ["معرفية", "إدارية", "إبداعية", "اجتماعية"];
+  const analyses = types.map(function(tp) {
+    return { type: tp, data: computeTypeAnalysis(tp) };
+  }).filter(function(a) { return a.data.count > 0; });
+
+  if (analyses.length === 0) {
+    container.innerHTML = '<div class="empty">لا توجد مهام بعد.</div>';
+    return;
+  }
+  let html = "";
+  analyses.forEach(function(a) {
+    const d = a.data;
+    const warn = sampleWarning(d.gapCount);
+    const mult = Math.max(0.25, 1 + d.aggGap);
+    html += '<div class="type-gap-card">';
+    html += '<div class="type-gap-header"><strong>' + a.type + '</strong><span class="small">' + d.count + ' مهمة — ' + d.done + ' منجزة</span></div>';
+    if (d.gapCount === 0) {
+      html += '<p class="small" style="margin:0;">لا توجد مهام بزمن فعلي مسجّل بعد.</p>';
+    } else {
+      html += '<div class="weekly-metric"><span class="weekly-metric-label">متوسط فجوة المهام</span><span class="weekly-metric-value ' + gapMetricClass(d.avgGap) + '">' + gapText(d.avgGap) + '</span></div>';
+      html += '<div class="weekly-metric"><span class="weekly-metric-label">الفجوة المجمّعة</span><span class="weekly-metric-value ' + gapMetricClass(d.aggGap) + '">' + gapText(d.aggGap) + '</span></div>';
+      html += '<div class="weekly-metric"><span class="weekly-metric-label">وسيط الفجوة</span><span class="weekly-metric-value ' + gapMetricClass(d.medianGap) + '">' + gapText(d.medianGap) + '</span></div>';
+      html += '<div class="weekly-metric"><span class="weekly-metric-label">المعامل المقترح</span><span class="weekly-metric-value"><b>' + mult.toFixed(2) + '</b></span></div>';
+      html += '<div class="weekly-metric"><span class="weekly-metric-label">60 دقيقة تقدير ←</span><span class="weekly-metric-value">' + Math.round(60 * mult) + ' دقيقة فعلية</span></div>';
+    }
+    html += '<div class="type-sample-warning ' + warn.cls + '">' + warn.text + ' (' + d.gapCount + ' مهمة)</div>';
+    html += '</div>';
+  });
+  container.innerHTML = html;
+}
+
+/* ============ Backup & Restore ============ */
+
+function buildBackupObject() {
+  const raw = localStorage.getItem(STORAGE_KEY);
+  const data = raw ? JSON.parse(raw) : buildEmptyV2();
+  return {
+    backupFormatVersion: BACKUP_FORMAT_VERSION,
+    exportedAt: localDateTimeString(),
+    appVersion: APP_VERSION,
+    schemaVersion: CURRENT_SCHEMA_VERSION,
+    data: {
+      settings: data.settings || {},
+      tasks: Array.isArray(data.tasks) ? data.tasks : [],
+      dailyLogs: Array.isArray(data.dailyLogs) ? data.dailyLogs : []
+    }
+  };
+}
+
+function exportBackup() {
+  try {
+    const backup = buildBackupObject();
+    const json = JSON.stringify(backup, null, 2);
+    const blob = new Blob([json], { type: "application/json;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "time_tasks_backup_" + todayStr() + ".json";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showToast("✅ تم تصدير النسخة الاحتياطية");
+  } catch (e) {
+    showAlertModal("خطأ التصدير", "فشل التصدير: " + e.message);
+  }
+}
+
+function validateBackup(obj) {
+  if (!obj || typeof obj !== "object" || Array.isArray(obj))
+    return { valid: false, reason: "الملف ليس كائن JSON صالحًا." };
+  if (typeof obj.backupFormatVersion !== "number")
+    return { valid: false, reason: "الملف ليس نسخة احتياطية معروفة." };
+  if (obj.backupFormatVersion > BACKUP_FORMAT_VERSION)
+    return { valid: false, reason: "الملف من إصدار أحدث — حدّث التطبيق أولًا." };
+
+  const d = obj.data;
+  if (!d || typeof d !== "object" || Array.isArray(d))
+    return { valid: false, reason: "لا يوجد كائن بيانات." };
+  if (!Array.isArray(d.tasks))
+    return { valid: false, reason: "حقل المهام ليس مصفوفة." };
+  if (!Array.isArray(d.dailyLogs))
+    return { valid: false, reason: "حقل سجلات الأيام ليس مصفوفة." };
+
+  for (let i = 0; i < d.tasks.length; i++) {
+    const t = d.tasks[i];
+    if (!t || typeof t !== "object" || Array.isArray(t))
+      return { valid: false, reason: "المهمة رقم " + (i+1) + " تالفة." };
+    if (typeof t.id !== "number" || !Number.isFinite(t.id))
+      return { valid: false, reason: "معرّف مهمة غير صالح (" + (i+1) + ")." };
+    if (typeof t.name !== "string")
+      return { valid: false, reason: "اسم مهمة غير صالح (" + (i+1) + ")." };
+    if (typeof t.status !== "string" || !VALID_STATUS.includes(t.status))
+      return { valid: false, reason: "حالة مهمة غير صالحة (" + (i+1) + ")." };
+    if (typeof t.type !== "string" || !VALID_TYPES.includes(t.type))
+      return { valid: false, reason: "نوع مهمة غير صالح (" + (i+1) + ")." };
+    if (typeof t.expected !== "number" || !Number.isFinite(t.expected) || t.expected < 0)
+      return { valid: false, reason: "الزمن المتوقع غير صالح (" + (i+1) + ")." };
+    if (t.actual !== null && (typeof t.actual !== "number" || !Number.isFinite(t.actual) || t.actual < 0))
+      return { valid: false, reason: "المدة الفعلية غير صالحة (" + (i+1) + ")." };
+    if (typeof t.plannedDate !== "string" || !isValidCalendarDate(t.plannedDate))
+      return { valid: false, reason: "التاريخ غير صالح (" + (i+1) + ")." };
+    if (typeof t.plannedTime !== "string" || !isValidLocalTime(t.plannedTime))
+      return { valid: false, reason: "الوقت غير صالح (" + (i+1) + ")." };
+    if (t.completedAt !== null && !isValidLocalDateTime(t.completedAt))
+      return { valid: false, reason: "وقت الإنجاز غير صالح (" + (i+1) + ")." };
+  }
+
+  for (let i = 0; i < d.dailyLogs.length; i++) {
+    if (!validateDailyLog(d.dailyLogs[i]))
+      return { valid: false, reason: "سجل اليوم رقم " + (i+1) + " غير صالح." };
+  }
+
+  const dates = new Set();
+  for (let i = 0; i < d.dailyLogs.length; i++) {
+    if (dates.has(d.dailyLogs[i].date))
+      return { valid: false, reason: "سجلان بنفس التاريخ: " + d.dailyLogs[i].date };
+    dates.add(d.dailyLogs[i].date);
+  }
+  return { valid: true };
+}
+
+function handleImportFile(event) {
+  const file = event.target.files && event.target.files[0];
+  if (!file) return;
+  event.target.value = "";
+
+  const reader = new FileReader();
+  reader.onload = function(ev) {
+    let obj;
+    try { obj = JSON.parse(ev.target.result); }
+    catch (e) { showAlertModal("تنبيه الاستعادة", "الملف تالف — ليس JSON صالحًا."); return; }
+    const check = validateBackup(obj);
+    if (!check.valid) { showAlertModal("النسخة الاحتياطية غير صالحة", check.reason); return; }
+    showImportPreview(obj);
+  };
+  reader.onerror = function() { showAlertModal("خطأ القراءة", "فشل قراءة الملف."); };
+  reader.readAsText(file, "utf-8");
+}
+
+function showImportPreview(obj) {
+  const d = obj.data;
+  const tasksCount = d.tasks.length;
+  const logsCount = d.dailyLogs.length;
+  const exportedAt = obj.exportedAt || "غير معروف";
+
+  const currentRaw = localStorage.getItem(STORAGE_KEY);
+  let currentTasks = 0, currentLogs = 0;
+  try {
+    const cur = currentRaw ? JSON.parse(currentRaw) : {};
+    currentTasks = Array.isArray(cur.tasks) ? cur.tasks.length : 0;
+    currentLogs = Array.isArray(cur.dailyLogs) ? cur.dailyLogs.length : 0;
+  } catch (e) {}
+
+  const textHtml =
+    "<b>📅 تاريخ التصدير:</b> " + escapeHTML(exportedAt) + "<br>" +
+    "<b>🔢 إصدار التطبيق:</b> " + escapeHTML(obj.appVersion || "—") + "<br><br>" +
+    "<b>📋 المهام في الملف:</b> " + tasksCount + "<br>" +
+    "<b>📅 سجلات الأيام:</b> " + logsCount + "<br>" +
+    "<hr style='border:0;border-top:1px dashed var(--border);margin:10px 0;'>" +
+    "<b>الحالة الحالية:</b> " + currentTasks + " مهمة، " + currentLogs + " سجل.<br><br>" +
+    "<span style='color:var(--danger);font-weight:bold;'>⚠️ سيتم استبدال كل البيانات الحالية.</span>";
+
+  showConfirmModal("📦 معاينة النسخة الاحتياطية", textHtml, function() {
+    showPromptModal(
+      "تأكيد نهائي للاستعادة",
+      "للتأكيد، اكتب كلمة <b>استبدال</b>:",
+      "", "استبدال",
+      function(confirmText) {
+        if (confirmText !== "استبدال") {
+          showToast("❌ تم الإلغاء");
+          return;
+        }
+        try { if (currentRaw) localStorage.setItem(PRE_IMPORT_KEY, currentRaw); } catch (e) {}
+
+        const settings = d.settings || {};
+        const newData = {
+          schemaVersion: CURRENT_SCHEMA_VERSION,
+          createdByVersion: APP_VERSION,
+          settings: {
+            operationalDayStart: 4,
+            firstUseDate: settings.firstUseDate || todayStr(),
+            darkMode: settings.darkMode === true
+          },
+          tasks: d.tasks,
+          dailyLogs: d.dailyLogs
+        };
+        if (!validateV2(newData)) { showAlertModal("خطأ", "البيانات بعد التحويل غير صالحة."); return; }
+        try {
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(newData));
+          showToast("✅ تمت الاستعادة");
+          setTimeout(function() { location.reload(); }, 800);
+        } catch (e) { showAlertModal("فشل الحفظ", e.message); }
+      }
+    );
+  });
+}
+
+function undoLastImport() {
+  const raw = localStorage.getItem(PRE_IMPORT_KEY);
+  if (!raw) { showAlertModal("تنبيه", "لا توجد نسخة سابقة للتراجع."); return; }
+  showConfirmModal("التراجع عن الاستعادة", "سيتم استرجاع الحالة السابقة قبل آخر استعادة. متابعة؟", function() {
+    try {
+      const parsed = JSON.parse(raw);
+      if (!validateV2(parsed)) { showAlertModal("خطأ", "النسخة السابقة تالفة."); return; }
+      localStorage.setItem(STORAGE_KEY, raw);
+      localStorage.removeItem(PRE_IMPORT_KEY);
+      showToast("✅ تم الاسترجاع");
+      setTimeout(function() { location.reload(); }, 800);
+    } catch (e) { showAlertModal("فشل الاسترجاع", e.message); }
+  });
+}
+
+/* ============ Test Data ============ */
+
+function injectTestData() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) { showAlertModal("خطأ", "لا توجد بيانات أساسية"); return; }
+    const data = JSON.parse(raw);
+    if (!data || !Array.isArray(data.dailyLogs)) { showAlertModal("خطأ", "بنية غير صالحة"); return; }
+
+    showConfirmModal("زرع بيانات تجريبية", "سيتم إنشاء 3 أيام تجريبية. متابعة؟", function() {
+      localStorage.setItem(TEST_FLAG_KEY, "1");
+      const now = new Date();
+      if (now.getHours() < 4) now.setDate(now.getDate() - 1);
+      const testLogs = [];
+      const testTasks = [];
+      const cfgList = [
+        { offset: 1, control: 4, execution: 4, wellbeing: 4, energy: "مرتفع", distractions: 1 },
+        { offset: 2, control: 3, execution: 2, wellbeing: 3, energy: "متوسط", distractions: 5 },
+        { offset: 3, control: 4, execution: 3, wellbeing: 4, energy: "متوسط", distractions: 2 }
+      ];
+      cfgList.forEach(function(cfg) {
+        const d = new Date(now);
+        d.setDate(d.getDate() - cfg.offset);
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, "0");
+        const day = String(d.getDate()).padStart(2, "0");
+        const dateStr = y + "-" + m + "-" + day;
+        data.dailyLogs = data.dailyLogs.filter(function(l) { return l.date !== dateStr; });
+        testLogs.push({
+          date: dateStr,
+          control: cfg.control, execution: cfg.execution, wellbeing: cfg.wellbeing,
+          energy: cfg.energy, distractions: cfg.distractions,
+          bufferUsed: null, mentalTask: "", mentalNext: "",
+          createdAt: Date.now(), updatedAt: Date.now(), _test: true
+        });
+        testTasks.push({
+          id: Date.now() + cfg.offset * 100 + 1,
+          name: "قراءة كتاب " + dateStr,
+          type: "معرفية", status: "done",
+          expected: 60, actual: 60 + (cfg.offset * 20),
+          plannedDate: dateStr, plannedTime: "",
+          completedAt: dateStr + "T20:00:00",
+          createdAt: Date.now(), _test: true
+        });
+        testTasks.push({
+          id: Date.now() + cfg.offset * 100 + 2,
+          name: "مراجعة البريد " + dateStr,
+          type: "إدارية", status: "done",
+          expected: 30, actual: 32,
+          plannedDate: dateStr, plannedTime: "",
+          completedAt: dateStr + "T21:00:00",
+          createdAt: Date.now(), _test: true
+        });
+      });
+      data.dailyLogs = data.dailyLogs.concat(testLogs);
+      data.tasks = (data.tasks || []).filter(function(t) { return !t._test; });
+      data.tasks = data.tasks.concat(testTasks);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      showToast("🌱 تم زرع البيانات");
+      setTimeout(function() { location.reload(); }, 600);
+    });
+  } catch (e) { showAlertModal("خطأ", "فشل الزرع: " + e.message); }
+}
+
+function removeTestData() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return;
+    const data = JSON.parse(raw);
+    if (!data) return;
+    if (Array.isArray(data.dailyLogs))
+      data.dailyLogs = data.dailyLogs.filter(function(l) { return !l._test; });
+    if (Array.isArray(data.tasks))
+      data.tasks = data.tasks.filter(function(t) { return !t._test; });
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    localStorage.removeItem(TEST_FLAG_KEY);
+    showToast("🗑️ تم إزالة البيانات التجريبية");
+    setTimeout(function() { location.reload(); }, 600);
+  } catch (e) { showAlertModal("خطأ", "فشل الحذف: " + e.message); }
+}
+
+/* ============ Rendering ============ */
+
+function setFilter(f, btn) {
+  currentFilter = f;
+  document.querySelectorAll(".filters button").forEach(function(b) { b.classList.remove("active"); });
+  btn.classList.add("active");
+  renderTasks();
+}
+
+function renderTasks() {
+  const list = document.getElementById("taskList");
+  if (!list) return;
+  const search = document.getElementById("searchInput").value.toLowerCase().trim();
+  const typeFilter = document.getElementById("typeFilter").value;
+  let filtered = tasks.filter(function(t) {
+    if (search && !t.name.toLowerCase().includes(search)) return false;
+    if (typeFilter && t.type !== typeFilter) return false;
+    if (currentFilter === "done") return isTaskDone(t);
+    if (currentFilter === "pending") return !isTaskDone(t);
+    if (currentFilter === "late") return isLate(t);
+    return true;
+  });
+  filtered.sort(function(a, b) {
+    const aDone = isTaskDone(a), bDone = isTaskDone(b);
+    if (aDone !== bDone) return aDone ? 1 : -1;
+    const da = parseTaskDate(a.plannedDate, a.plannedTime) || new Date(8640000000000000);
+    const db = parseTaskDate(b.plannedDate, b.plannedTime) || new Date(8640000000000000);
+    return da - db;
+  });
+  if (filtered.length === 0) {
+    list.innerHTML = '<div class="empty">لا توجد مهام مطابقة 🔍</div>';
+    return;
+  }
+  list.innerHTML = filtered.map(function(t) {
+    const status = getStatus(t);
+    const cls = isTaskDone(t) ? "done" : "";
+    const safeName = escapeHTML(t.name);
+    const gap = computeGap(t.expected, t.actual);
+    let info = "🏷️ " + escapeHTML(t.type || "—") + " | ⏱️ متوقع: " + t.expected + " د";
+    if (t.actual !== null && t.actual !== undefined) {
+      info += " | ⏱️ فعلي: " + t.actual + " د";
+      info += ' | <span class="' + gapClass(gap) + '">📊 ' + gapText(gap) + "</span>";
+    }
+    info += "<br>📅 " + formatDate(t.plannedDate) + (t.plannedTime ? " — ⏰ " + t.plannedTime : "");
+    const testTag = t._test ? '<span class="test-badge">تجريبي</span>' : '';
+    return '' +
+      '<div class="task ' + cls + '">' +
+        '<div class="task-title">' + testTag + safeName + '</div>' +
+        '<div class="task-info">' + info + '</div>' +
+        '<span class="badge ' + status.className + '">' + status.text + '</span>' +
+        '<div class="actions">' +
+          '<button class="btn-success" onclick="toggleTask(' + t.id + ')">' + (isTaskDone(t) ? "↩️ إلغاء" : "✓ إنجاز") + '</button>' +
+          '<button class="btn-warning" onclick="editTask(' + t.id + ')">✏️</button>' +
+          '<button class="btn-danger" onclick="deleteTask(' + t.id + ')">🗑️</button>' +
+        '</div>' +
+      '</div>';
+  }).join("");
+}
+
+function renderStats() {
+  const total = tasks.length;
+  const done = tasks.filter(isTaskDone).length;
+  const late = tasks.filter(isLate).length;
+  const pending = total - done;
+  document.getElementById("statsTotal").textContent = total;
+  document.getElementById("statsDone").textContent = done;
+  document.getElementById("statsPending").textContent = pending;
+  document.getElementById("statsLate").textContent = late;
+  const today = todayStr();
+  const todayTasks = tasks.filter(function(t) { return t.plannedDate === today; });
+  const todayDone = todayTasks.filter(isTaskDone).length;
+  const todayLate = todayTasks.filter(isLate).length;
+  const todayPending = todayTasks.length - todayDone;
+  document.getElementById("homeTotal").textContent = todayTasks.length;
+  document.getElementById("homeDone").textContent = todayDone;
+  document.getElementById("homePending").textContent = todayPending;
+  document.getElementById("homeLate").textContent = todayLate;
+  const pct = todayTasks.length === 0 ? 0 : Math.round(todayDone / todayTasks.length * 100);
+  document.getElementById("homePercent").textContent = pct + "%";
+  const bar = document.getElementById("homeBar");
+  bar.style.width = pct + "%";
+  if (pct === 100 && lastPct !== 100 && todayTasks.length > 0) {
+    bar.classList.add("complete");
+    const card = bar.closest(".card");
+    if (card) {
+      card.classList.add("celebrate");
+      setTimeout(function() { card.classList.remove("celebrate"); }, 700);
+    }
+  } else if (pct < 100) bar.classList.remove("complete");
+  lastPct = pct;
+  const types = ["معرفية", "إدارية", "إبداعية", "اجتماعية"];
+  const typeBox = document.getElementById("typeStats");
+  if (tasks.length === 0) {
+    typeBox.innerHTML = '<div class="empty">لا توجد بيانات بعد</div>';
+    return;
+  }
+  const html = types.map(function(tp) {
+    const subset = tasks.filter(function(t) { return t.type === tp; });
+    if (subset.length === 0) return "";
+    const d = subset.filter(isTaskDone).length;
+    const pct2 = Math.round(d / subset.length * 100);
+    const withActual = subset.filter(function(t) {
+      return t.actual !== null && t.actual !== undefined;
+    });
+    let gapLine = "";
+    if (withActual.length > 0) {
+      const avgGap = withActual.reduce(function(s, t) {
+        return s + computeGap(t.expected, t.actual);
+      }, 0) / withActual.length;
+      gapLine = ' | <span class="' + gapClass(avgGap) + '">فجوة ' + gapText(avgGap) + "</span>";
+    }
+    return '' +
+      '<div class="stat-box" style="margin-top:8px;text-align:right;">' +
+        '<div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;">' +
+          '<strong>' + tp + '</strong>' +
+          '<span class="small">' + d + ' / ' + subset.length + ' — ' + pct2 + '%' + gapLine + '</span>' +
+        '</div>' +
+        '<div class="progress"><div class="progress-bar" style="width:' + pct2 + '%"></div></div>' +
+      '</div>';
+  }).join("");
+  typeBox.innerHTML = html || '<div class="empty">لا توجد بيانات</div>';
+}
+
+function renderAll() {
+  renderTasks();
+  renderStats();
+  renderDailyLog();
+  renderWeeklyReport();
+  renderTypeGapAnalysis();
+}
+
+function showPage(name, btn) {
+  document.querySelectorAll(".page").forEach(function(p) { p.classList.remove("active"); });
+  document.getElementById("page-" + name).classList.add("active");
+  document.querySelectorAll("nav button").forEach(function(b) { b.classList.remove("active"); });
+  if (btn) btn.classList.add("active");
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
+
+function toggleDarkMode() {
+  appSettings.darkMode = !appSettings.darkMode;
+  document.body.classList.toggle("dark-mode", appSettings.darkMode);
+  if (saveData()) {
+    showToast(appSettings.darkMode ? "🌙 الوضع الليلي" : "☀️ الوضع النهاري");
+  }
+}
+
+/* ============ CSV Export ============ */
+
+function exportCSV() {
+  if (tasks.length === 0) { showAlertModal("تنبيه", "لا توجد مهام لتصديرها"); return; }
+  const header = [
+    "id", "الاسم", "النوع", "الحالة",
+    "المتوقع_دقائق", "المدة_الفعلية_المسجلة", "الفجوة_%",
+    "التاريخ_المخطط", "الوقت_المخطط", "أُنجزت_في", "أُنشئت_في"
+  ];
+  const rows = tasks.map(function(t) {
+    const gap = computeGap(t.expected, t.actual);
+    return [
+      t.id, t.name, t.type, t.status, t.expected,
+      (t.actual !== null && t.actual !== undefined) ? t.actual : "",
+      (t.actual !== null && t.actual !== undefined) ? (Math.round(gap * 100) + "%") : "",
+      t.plannedDate || "", t.plannedTime || "", t.completedAt || "",
+      new Date(t.createdAt).toLocaleString("ar")
+    ];
+  });
+  const csv = "\ufeff" + [header].concat(rows)
+    .map(function(r) {
+      return r.map(function(x) { return '"' + String(x).replace(/"/g, '""') + '"'; }).join(",");
+    }).join("\n");
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "my_tasks_" + todayStr() + ".csv";
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  showToast("📊 تم تصدير CSV");
+}
+
+/* ============ Reset ============ */
+
+function resetAll() {
+  showConfirmModal("🗑️ حذف كل البيانات", "سيتم حذف جميع المهام وسجلات الأيام نهائيًا. هل أنت متأكد؟", function() {
+    showConfirmModal("تأكيد نهائي", "هل أنت واثق تمامًا؟", function() {
+      const fresh = buildEmptyV2();
+      fresh.settings.darkMode = appSettings.darkMode;
+      fresh.settings.firstUseDate = todayStr();
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(fresh));
+      } catch (e) {
+        showAlertModal("خطأ", "تعذر الحفظ");
+        return;
+      }
+      appSettings = fresh.settings;
+      createdByVersion = fresh.createdByVersion;
+      tasks = [];
+      cancelEdit();
+      renderAll();
+      showToast("✅ تم حذف كل البيانات");
+    });
+  });
+}
+
+/* ============ Migration Tests (36 اختبارًا) ============ */
+
+function runMigrationTests() {
+  const results = [];
+  const originalStorage = {};
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    originalStorage[key] = localStorage.getItem(key);
+  }
+  function reset() { localStorage.clear(); }
+  function test(name, setup, check) {
+    reset();
+    try {
+      setup();
+      const report = migrateV1ToV2();
+      const result = check(report);
+      results.push({ name, passed: result === true, details: result === true ? "" : String(result || "failed") });
+    } catch (e) {
+      results.push({ name, passed: false, details: "EXCEPTION: " + e.message });
+    }
+  }
+
+  test("localStorage فارغ", function() {}, function(r) {
+    if (!r.success) return "success=false";
+    const d = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    return d.schemaVersion === 2 && Array.isArray(d.tasks) && d.tasks.length === 0;
+  });
+  test("JSON تالف + لا backup → رفض", function() { localStorage.setItem(STORAGE_KEY, "{invalid"); },
+    function(r) { return r.success === false && r.error === "JSON_parse_failed_no_backup"; });
+  test("كائن فارغ {} → v2 فارغة", function() { localStorage.setItem(STORAGE_KEY, "{}"); },
+    function(r) { return r.success === true; });
+  test("مهمة كاملة صحيحة", function() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ tasks: [{
+      id: 1, name: "قراءة", type: "معرفية", expected: 60, actual: 75,
+      date: "2026-09-30", time: "20:00", completed: false, createdAt: 1234567890
+    }]}));
+  }, function(r) {
+    if (!r.success) return "success=false";
+    const d = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    const t = d.tasks[0];
+    return t.name === "قراءة" && t.status === "pending" && t.actual === 75
+      && t.completedAt === null && t.plannedDate === "2026-09-30";
+  });
+  test("منجزة بـactual → completedAt=null", function() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ tasks: [{
+      id: 1, name: "قراءة", completed: true, expected: 60, actual: 90,
+      date: "2026-09-30", time: "20:00"
+    }]}));
+  }, function(r) {
+    const d = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    return d.tasks[0].status === "done" && d.tasks[0].completedAt === null;
+  });
+  test("منجزة بلا actual", function() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ tasks: [{ id: 1, name: "قراءة", completed: true, expected: 60 }] }));
+  }, function(r) {
+    const d = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    return d.tasks[0].status === "done" && d.tasks[0].actual === null && d.tasks[0].completedAt === null;
+  });
+  test("بلا id → يُولَّد", function() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ tasks: [{ name: "قراءة", expected: 60 }] }));
+  }, function(r) {
+    const d = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    return typeof d.tasks[0].id === "number" && d.tasks[0].id > 0;
+  });
+  test("مهمتان بنفس id", function() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ tasks: [
+      { id: 1, name: "أ", expected: 60 }, { id: 1, name: "ب", expected: 30 }
+    ]}));
+  }, function(r) {
+    const d = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    return d.tasks[0].id !== d.tasks[1].id;
+  });
+  test("expected سالب → 0", function() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ tasks: [{ id: 1, name: "أ", expected: -5 }] }));
+  }, function(r) {
+    const d = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    return d.tasks[0].expected === 0;
+  });
+  test("expected نص → رقم", function() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ tasks: [{ id: 1, name: "أ", expected: "60" }] }));
+  }, function(r) {
+    const d = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    return d.tasks[0].expected === 60;
+  });
+  test("date غير صالح", function() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ tasks: [{ id: 1, name: "أ", expected: 60, date: "2026-99-99" }] }));
+  }, function(r) {
+    const d = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    return d.tasks[0].plannedDate === todayStr();
+  });
+  test("date = 2026-02-31", function() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ tasks: [{ id: 1, name: "أ", expected: 60, date: "2026-02-31" }] }));
+  }, function(r) {
+    const d = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    return d.tasks[0].plannedDate === todayStr();
+  });
+  test("time = 25:99", function() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ tasks: [{ id: 1, name: "أ", expected: 60, time: "25:99" }] }));
+  }, function(r) {
+    const d = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    return d.tasks[0].plannedTime === "";
+  });
+  test("name فارغ", function() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ tasks: [{ id: 1, name: "", expected: 60 }] }));
+  }, function(r) {
+    const d = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    return d.tasks[0].name === "(بلا اسم)";
+  });
+  test("name >500", function() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ tasks: [{ id: 1, name: "أ".repeat(800), expected: 60 }] }));
+  }, function(r) {
+    const d = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    return d.tasks[0].name.length === 500;
+  });
+  test("عنصر نصي", function() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ tasks: ["قراءة كتاب", { id: 1, name: "أ", expected: 60 }] }));
+  }, function(r) {
+    const d = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    return r.unrecoverable === 1 && d.tasks.length === 1
+      && r.unrecoverableItems[0].reason === "not_a_task_object";
+  });
+  test("null في tasks", function() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ tasks: [null, { id: 1, name: "أ", expected: 60 }] }));
+  }, function(r) { return r.unrecoverable === 1; });
+  test("مصفوفة داخل tasks", function() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ tasks: [[1,2,3], { id: 1, name: "أ", expected: 60 }] }));
+  }, function(r) { return r.unrecoverable === 1; });
+  test("كائن فارغ {}", function() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ tasks: [{}, { id: 1, name: "أ", expected: 60 }] }));
+  }, function(r) {
+    const d = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    return d.tasks.length === 2 && d.tasks[0].name === "(بلا اسم)" && r.unrecoverable === 0;
+  });
+  test("backup يُنشأ", function() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ tasks: [{ id: 1, name: "أ", expected: 60 }] }));
+  }, function(r) {
+    const b = localStorage.getItem(BACKUP_KEY);
+    return b !== null && b.includes('"name":"أ"');
+  });
+  test("v2 سليمة لا تُلمس", function() {
+    const v2 = {
+      schemaVersion: 2, createdByVersion: "2.0.0",
+      settings: { operationalDayStart: 4, firstUseDate: "2026-01-01", darkMode: false },
+      tasks: [{ id: 999, name: "v2_task", type: "معرفية", status: "pending",
+        expected: 5, actual: null, plannedDate: "2026-09-30",
+        plannedTime: "", completedAt: null, createdAt: 1234567890 }],
+      dailyLogs: []
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(v2));
+  }, function(r) {
+    const d = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    return d.tasks[0].name === "v2_task" && d.tasks[0].id === 999;
+  });
+  test("tasks ليس مصفوفة", function() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ tasks: { fake: "object" } }));
+  }, function(r) {
+    const d = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    return Array.isArray(d.tasks) && d.tasks.length === 0;
+  });
+  test("حقول غير معروفة", function() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ tasks: [{
+      id: 1, name: "أ", expected: 60, priority: "high", tags: ["work"]
+    }]}));
+  }, function(r) {
+    const d = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    const t = d.tasks[0];
+    return t.priority === undefined && t.tags === undefined;
+  });
+  test("gap لا يُنقل", function() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ tasks: [{ id: 1, name: "أ", expected: 60, actual: 90, gap: 0.5 }] }));
+  }, function(r) {
+    const d = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    return d.tasks[0].gap === undefined;
+  });
+  test("firstUseDate من أقدم createdAt", function() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ tasks: [
+      { id: 1, name: "أ", expected: 60, createdAt: new Date("2026-08-15").getTime() },
+      { id: 2, name: "ب", expected: 30, createdAt: new Date("2026-09-01").getTime() }
+    ]}));
+  }, function(r) {
+    const d = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    return d.settings.firstUseDate === "2026-08-15";
+  });
+  test("actual = \"\" → null", function() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ tasks: [{ id: 1, name: "أ", expected: 60, actual: "" }] }));
+  }, function(r) {
+    const d = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    return d.tasks[0].actual === null;
+  });
+  test("50 مهمة سليمة", function() {
+    const list = [];
+    for (let i = 0; i < 50; i++) list.push({
+      id: i + 1, name: "مهمة " + i, type: "معرفية", expected: 30,
+      actual: i % 2 === 0 ? 45 : null, date: "2026-09-30", time: "",
+      completed: i % 2 === 0, createdAt: 1234567890 + i
+    });
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ tasks: list }));
+  }, function(r) {
+    const d = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    return d.tasks.length === 50 && r.unrecoverable === 0;
+  });
+  test("schemaVersion: 99 → رفض", function() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      schemaVersion: 99, tasks: [{ id: 1, name: "أ", expected: 60 }]
+    }));
+  }, function(r) { return r.success === false && r.error === "unknown_schema_version_99"; });
+  test("v2 تالفة → رفض", function() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      schemaVersion: 2, createdByVersion: "2.0.0",
+      settings: {}, tasks: "not an array", dailyLogs: []
+    }));
+  }, function(r) { return r.success === false && r.error === "v2_invalid_no_recovery"; });
+  test("completedAt مع pending → null", function() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ tasks: [{
+      id: 1, name: "أ", expected: 60, completed: false, completedAt: "2026-09-30T10:00:00"
+    }]}));
+  }, function(r) {
+    const d = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    return d.tasks[0].completedAt === null;
+  });
+  test("completedAt نص غير صالح", function() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ tasks: [{
+      id: 1, name: "أ", expected: 60, completed: true, completedAt: "hello world"
+    }]}));
+  }, function(r) {
+    const d = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    return d.tasks[0].completedAt === null;
+  });
+  test("JSON تالف + backup صالح", function() {
+    localStorage.setItem(BACKUP_KEY, JSON.stringify({ tasks: [{ id: 77, name: "من_backup", expected: 30 }] }));
+    localStorage.setItem(STORAGE_KEY, "{corrupt json");
+  }, function(r) {
+    if (!r.recoveredFromBackup) return "not_recovered";
+    const d = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    return d.tasks.some(function(t) { return t.name === "من_backup"; });
+  });
+  test("JSON تالف + backup تالف", function() {
+    localStorage.setItem(BACKUP_KEY, "{also corrupt");
+    localStorage.setItem(STORAGE_KEY, "{corrupt json");
+  }, function(r) {
+    const main = localStorage.getItem(STORAGE_KEY);
+    return r.success === false && r.error === "JSON_parse_failed_backup_also_corrupt"
+      && main === "{corrupt json";
+  });
+  test("dailyLogs مكررة", function() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      schemaVersion: 2, createdByVersion: "2.0.0",
+      settings: {}, tasks: [],
+      dailyLogs: [{ date: "2026-09-30" }, { date: "2026-09-30" }]
+    }));
+  }, function(r) { return r.success === false && r.error === "v2_invalid_no_recovery"; });
+  test("createdByVersion لا يتغير", function() {
+    const v2 = {
+      schemaVersion: 2, createdByVersion: "1.0.0",
+      settings: { operationalDayStart: 4, firstUseDate: "2026-01-01", darkMode: false },
+      tasks: [], dailyLogs: []
+    };
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(v2));
+  }, function(r) {
+    tasks = [];
+    saveData();
+    const d = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    return d.createdByVersion === "1.0.0";
+  });
+  test("dailyLog بقيمة control=99 → رفض", function() {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({
+      schemaVersion: 2, createdByVersion: "2.0.0",
+      settings: { operationalDayStart: 4, firstUseDate: "2026-01-01", darkMode: false },
+      tasks: [],
+      dailyLogs: [{ date: "2026-09-30", control: 99, execution: null, wellbeing: null, energy: null, distractions: null }]
+    }));
+  }, function(r) { return r.success === false && r.error === "v2_invalid_no_recovery"; });
+
+  localStorage.clear();
+  for (const key in originalStorage) localStorage.setItem(key, originalStorage[key]);
+
+  let passed = 0, failed = 0;
+  results.forEach(function(r) { if (r.passed) passed++; else failed++; });
+  console.log("Migration Tests: " + passed + "/" + results.length + " (" + failed + " failed)");
+  return results;
+}
+
+function runTestsAndShow() {
+  const results = runMigrationTests();
+  let passed = 0, failed = 0;
+  const lines = [];
+
+  results.forEach(function(r, i) {
+    const num = String(i + 1).padStart(2, "0");
+    if (r.passed) { passed++; lines.push("✅ " + num + ". " + r.name); }
+    else { failed++; lines.push("❌ " + num + ". " + r.name + " — " + r.details); }
+  });
+
+  const overlay = document.createElement("div");
+  overlay.style.cssText = "position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:9999;display:flex;align-items:center;justify-content:center;padding:16px;box-sizing:border-box;";
+  const box = document.createElement("div");
+  box.style.cssText = "background:var(--card-bg);color:var(--text);border-radius:16px;max-width:100%;width:100%;max-height:90vh;display:flex;flex-direction:column;box-shadow:0 10px 40px rgba(0,0,0,0.5);overflow:hidden;";
+  const header = document.createElement("div");
+  header.style.cssText = "padding:14px 18px;border-bottom:1px solid var(--border);font-weight:bold;font-size:16px;flex-shrink:0;background:linear-gradient(135deg,#2563eb,#7c3aed);color:white;";
+  header.textContent = "🧪 نتائج اختبارات الترحيل";
+  const summaryBar = document.createElement("div");
+  summaryBar.style.cssText = "padding:12px 18px;font-weight:bold;font-size:15px;flex-shrink:0;text-align:center;background:" + (failed === 0 ? "#dcfce7" : "#fee2e2") + ";color:" + (failed === 0 ? "#166534" : "#991b1b") + ";";
+  summaryBar.textContent = (failed === 0 ? "✅ " : "⚠️ ") + "نجحت: " + passed + " | فشلت: " + failed + " | المجموع: " + results.length;
+  const body = document.createElement("div");
+  body.style.cssText = "padding:12px 18px;overflow-y:auto;flex:1;font-family:monospace;font-size:13px;line-height:1.7;white-space:pre-wrap;word-break:break-word;";
+  body.textContent = lines.join("\n");
+  const footer = document.createElement("div");
+  footer.style.cssText = "padding:12px 18px;border-top:1px solid var(--border);flex-shrink:0;";
+  const closeBtn = document.createElement("button");
+  closeBtn.textContent = "إغلاق";
+  closeBtn.style.cssText = "width:100%;background:var(--primary);color:white;border:0;border-radius:10px;padding:12px;font-size:14px;font-weight:bold;cursor:pointer;";
+  closeBtn.onclick = function() { document.body.removeChild(overlay); };
+
+  footer.appendChild(closeBtn);
+  box.appendChild(header);
+  box.appendChild(summaryBar);
+  box.appendChild(body);
+  box.appendChild(footer);
+  overlay.appendChild(box);
+  document.body.appendChild(overlay);
+}
+
+/* ============ Beforeunload ============ */
+
+window.addEventListener("beforeunload", function(e) {
+  const nameEl = document.getElementById("taskName");
+  const expEl = document.getElementById("taskExpected");
+  if (!nameEl || !expEl) return;
+  const hasContent = nameEl.value.trim() !== "" || expEl.value !== "";
+  if (hasContent || editingId !== null) {
+    e.preventDefault();
+    e.returnValue = "";
+    return "";
+  }
+});
+
+/* ============ Web Share API ============ */
+
+function shareWeeklyReport() {
+  const report = computeWeeklyReport();
+  const rec = computeRecommendation(report);
+
+  if (report.daysLogged === 0 && report.totalTasks === 0) {
+    showToast("📭 لا توجد بيانات أسبوعية للمشاركة");
+    return;
+  }
+
+  const lines = ["📊 تقريري الأسبوعي — إدارة الوقت والمهام", ""];
+  lines.push("📅 الأيام المسجلة: " + report.daysLogged + " / 7");
+  lines.push("✅ المهام: " + report.doneTasks + " / " + report.totalTasks);
+  lines.push("");
+
+  if (report.control.count > 0)
+    lines.push("🎛️ السيطرة: " + report.control.avg.toFixed(1) + " / 5");
+  if (report.execution.count > 0)
+    lines.push("🎯 التنفيذ: " + report.execution.avg.toFixed(1) + " / 5");
+  if (report.wellbeing.count > 0)
+    lines.push("🌿 الرفاه: " + report.wellbeing.avg.toFixed(1) + " / 5");
+
+  lines.push("🚧 المقاطعات: " + report.totalDistractions);
+
+  if (report.gapCount > 0) {
+    lines.push("");
+    lines.push("⏱️ الفجوة الزمنية:");
+    lines.push("  متوسط: " + gapText(report.avgGap));
+    lines.push("  مجمّعة: " + gapText(report.aggGap));
+    lines.push("  وسيط: " + gapText(report.medianGap));
+  }
+
+  lines.push("");
+  lines.push("💡 " + rec.text.replace(/<[^>]*>/g, ""));
+
+  const text = lines.join("\n");
+
+  if (navigator.share) {
+    navigator.share({
+      title: "تقريري الأسبوعي — إدارة الوقت والمهام",
+      text: text
+    }).catch(function(err) {
+      if (err && err.name !== "AbortError") console.error("Share failed:", err);
+    });
+  } else if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(function() {
+      showToast("📋 تم نسخ التقرير إلى الحافظة");
+    }).catch(function() {
+      showAlertModal("غير مدعوم", "المشاركة والنسخ غير مدعومين في هذا المتصفح.");
+    });
+  } else {
+    showAlertModal("غير مدعوم", "المشاركة غير مدعومة في هذا المتصفح.");
+  }
+}
+
+/* ============ Service Worker Registration ============ */
+
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", function() {
+    navigator.serviceWorker.register("sw.js")
+      .then(function(reg) { console.log("SW registered. Scope:", reg.scope); })
+      .catch(function(err) { console.log("SW registration failed:", err); });
+  });
+}
+
+/* ============ Init ============ */
+
+loadData();
+document.getElementById("taskDate").value = todayStr();
+renderAll();
+</script>
+
+</body>
+</html>

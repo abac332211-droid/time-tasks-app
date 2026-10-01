@@ -1,0 +1,22 @@
+{
+  "name": "إدارة الوقت والمهام",
+  "short_name": "الوقت",
+  "description": "خطط، أنجز، وحلّل وقتك بدقة وتوازن",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f4f7fb",
+  "theme_color": "#2563eb",
+  "lang": "ar",
+  "dir": "rtl",
+  "categories": ["productivity", "utilities"],
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
